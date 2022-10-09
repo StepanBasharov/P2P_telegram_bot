@@ -1,0 +1,3 @@
+BTC_address = "bc1qxglcnzeu7z5k2er2wu35a5y7w7dxr4reyv77yk"
+USDT_address = "TSsMLcCHejPQjxxfCpbhBsstbXDBd1mvnD"
+XMR_address = "429FE15v5LLChWtNZbvu1qcwYYfbtEpta46ofg4yTaQZBCfnbfWMovM6kpRtzztJAaaNz2Bo9qKho6ZgJvYVAxHSQaYbvWf"
