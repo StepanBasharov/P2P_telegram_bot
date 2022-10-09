@@ -15,6 +15,7 @@ from keyboards.balance_board import balance_base_board, take_off_crypto_board, t
     board_success_usdt, board_success_xmr
 from keyboards.settings_board import settings_board
 from keyboards.fiat_board import fiat_board
+from keyboards.p2p_board import add_ad_board
 
 from database.balancedb import wallet, get_balance, add_btc, add_usdt, add_xmr
 from database.check_hash import checker_hash
@@ -218,7 +219,15 @@ async def settings(callback: types.CallbackQuery):
     if callback.data == 'fiat':
         await bot.send_message(callback.from_user.id, "Фиат доступный на данный момент: ", reply_markup=fiat_board)
 
+@dp.callback_query_handler(text=['ad'])
+async def p2p_board_ad(callback: types.CallbackQuery):
+    if callback.data == 'ad':
+        await bot.send_message(callback.from_user.id, "Здесь находятся все ваши объявления", reply_markup=add_ad_board)
 
+@dp.callback_query_handler(text=['add_new_ad'])
+async def p2p_add_new_ad(callback: types.CallbackQuery):
+    if callback.data == 'add_new_ad':
+        await bot.send_message(callback.from_user.id, "Переход к созданию нового объявления")
 
 @dp.callback_query_handler()
 async def choose_fiat(callback: types.CallbackQuery):
