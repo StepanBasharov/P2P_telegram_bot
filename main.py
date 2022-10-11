@@ -15,12 +15,12 @@ from keyboards.balance_board import balance_base_board, take_off_crypto_board, t
     board_success_usdt, board_success_xmr
 from keyboards.settings_board import settings_board
 from keyboards.fiat_board import fiat_board
-from keyboards.p2p_board import add_ad_board, buy_or_sell_board
+from keyboards.p2p_board import add_ad_board, buy_or_sell_board, choose_p2p_crypto_board
 
 from database.balancedb import wallet, get_balance, add_btc, add_usdt, add_xmr
 from database.check_hash import checker_hash
 from database.settingsdb import settings_starts, change_fiat, check_fiat
-from database.addb import creationad, new_ad_buy, new_ad_sell
+from database.addb import creationad, new_ad_buy, new_ad_sell, update_adtype, update_adcrypto, update_fiat
 
 from states.hash_state import Check_hash_btc, Check_hash_usdt, Check_hash_xmr
 from states.output_crypto import output_btc, output_xmr, output_usdt
@@ -132,6 +132,7 @@ async def usdt_send_amount(message: types.Message, state: FSMContext):
         await bot.send_message(message.from_user.id, "Скоро средства поступят на кошелек")
     await state.finish()
 
+
 @dp.message_handler(state=output_xmr.send_to)
 async def xmr_send_address(message: types.Message, state: FSMContext):
     await state.update_data(xmr_address=message.text)
@@ -176,9 +177,9 @@ async def get_btc_hash(message: types.Message, state: FSMContext):
     await state.finish()
     checker = checker_hash(hash, int(message.from_user.id))
 
-    if checker == True:
+    if checker:
         amount = btc_hash_scaner(hash, BTC_address)
-        if amount == False:
+        if not amount:
             await bot.send_message(message.from_user.id, "Вы используете неккоректный hash")
         else:
             await bot.send_message(message.from_user.id, f"Скоро {amount} BTC будут зачислены на ваш счет")
@@ -195,9 +196,9 @@ async def get_usdt_hash(message: types.Message, state: FSMContext):
     hash = data['hash']
     await state.finish()
     checker = checker_hash(hash, int(message.from_user.id))
-    if checker == True:
+    if checker:
         amount = tron_hash_scaner(hash, USDT_address)
-        if amount == False:
+        if not amount:
             await bot.send_message(message.from_user.id, "Вы используете неккоректный hash")
         else:
             await bot.send_message(message.from_user.id, f"Скоро {amount} USDT будут зачислены на ваш счет")
@@ -216,9 +217,9 @@ async def get_xmr_hash(message: types.Message, state: FSMContext):
     await state.finish()
     checker = checker_hash(hash, int(message.from_user.id))
 
-    if checker == True:
+    if checker:
         amount = xmr_hash_scaner(hash)
-        if amount == False:
+        if not amount:
             await bot.send_message(message.from_user.id, "Вы используете неккоректный hash")
         else:
             await bot.send_message(message.from_user.id, f"Скоро {amount} XMR будут зачислены на ваш счет")
@@ -248,11 +249,21 @@ async def p2p_add_new_ad(callback: types.CallbackQuery):
 @dp.callback_query_handler(text=["create_buy_ad", "create_sell_ad", "back_to"])
 async def p2p_choose_type(callback: types.CallbackQuery):
     if callback.data == "create_buy_ad":
-        await bot.send_message(callback.from_user.id, "Объявление на покупку")
+        update_adtype(callback.from_user.id, "BUY")
+        await bot.send_message(callback.from_user.id, "Выбор криптовалюты", reply_markup=choose_p2p_crypto_board)
     elif callback.data == "create_sell_ad":
-        await bot.send_message(callback.from_user.id, "Объявление на продажу создано")
+        update_adtype(callback.from_user.id, "SELL")
+        await bot.send_message(callback.from_user.id, "Выбор криптовалюты", reply_markup=choose_p2p_crypto_board)
     elif callback.data == "back_to":
         await bot.send_message(callback.from_user.id, "Здесь находятся все ваши объявления", reply_markup=add_ad_board)
+
+
+@dp.callback_query_handler(text=["BTC", "USDT", "XMR"])
+async def p2p_choose_crypto(callback: types.CallbackQuery):
+    update_adcrypto(callback.from_user.id, callback.data)
+    update_fiat(callback.from_user.id)
+    await bot.send_message(callback.from_user.id, "Критпа выбрана")
+
 
 
 # Настройки

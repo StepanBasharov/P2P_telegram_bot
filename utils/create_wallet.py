@@ -1,5 +1,12 @@
-from bitcoinlib.wallets import Wallet
+def test(x):
+    if x == 1:
+        return True
+    else:
+        return False
 
-w = Wallet.create('Wallet123')
-key1 = w.get_key()
-print(key1.account_id)
+a = test(0)
+
+if a:
+    print(True)
+elif not a:
+    print(False)

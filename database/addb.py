@@ -1,10 +1,11 @@
 import sqlite3
+from random import randint
+from database.settingsdb import check_fiat
 
 db = sqlite3.connect('database/adsdb.db')
 
 sql = db.cursor()
 
-from random import randint
 
 def creationad(user_id):
 
@@ -15,6 +16,21 @@ def creationad(user_id):
         return True
     else:
         return False
+
+
+def update_adtype(user_id, adtype):
+    sql.execute(f"UPDATE ad_creation SET ad_type = (?) WHERE user_id = (?)", (adtype, user_id))
+    db.commit()
+
+
+def update_adcrypto(user_id, crypto):
+    sql.execute(f"UPDATE ad_creation SET crypto = (?) WHERE user_id = (?)", (crypto, user_id))
+    db.commit()
+
+def update_fiat(user_id):
+    fiat = check_fiat(user_id)[0]
+    sql.execute(f"UPDATE ad_creation SET fiat = (?) WHERE user_id = (?)", (fiat, user_id))
+    db.commit()
 
 def new_ad_sell(user_id, crypto, fiat, pay_method, requisites, limits, amount, price):
 

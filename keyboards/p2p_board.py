@@ -19,3 +19,10 @@ buy_ad_create = InlineKeyboardButton("🟢 Купить", callback_data="create_
 sell_ad_create = InlineKeyboardButton("🟥 Продать", callback_data="create_sell_ad")
 
 buy_or_sell_board = InlineKeyboardMarkup().row(buy_ad_create, sell_ad_create).row(back_button)
+
+# Кнопки выбора криптовалюты
+choose_btc = InlineKeyboardButton("BTC", callback_data="BTC")
+choose_usdt = InlineKeyboardButton("USDT(TRC20)", callback_data="USDT")
+choose_xmr = InlineKeyboardButton("XMR", callback_data="XMR")
+
+choose_p2p_crypto_board = InlineKeyboardMarkup().row(choose_btc).row(choose_usdt).row(choose_xmr)
