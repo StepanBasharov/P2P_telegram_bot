@@ -26,3 +26,5 @@ choose_usdt = InlineKeyboardButton("USDT(TRC20)", callback_data="USDT")
 choose_xmr = InlineKeyboardButton("XMR", callback_data="XMR")
 
 choose_p2p_crypto_board = InlineKeyboardMarkup().row(choose_btc).row(choose_usdt).row(choose_xmr)
+
+# Кнопка выбора способа оплаты

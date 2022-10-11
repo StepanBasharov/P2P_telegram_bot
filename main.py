@@ -265,6 +265,9 @@ async def p2p_choose_crypto(callback: types.CallbackQuery):
     await bot.send_message(callback.from_user.id, "Критпа выбрана")
 
 
+@dp.callback_query_handler()
+
+
 
 # Настройки
 @dp.callback_query_handler(text=['lang', 'fiat'])
