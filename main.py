@@ -15,11 +15,12 @@ from keyboards.balance_board import balance_base_board, take_off_crypto_board, t
     board_success_usdt, board_success_xmr
 from keyboards.settings_board import settings_board
 from keyboards.fiat_board import fiat_board
-from keyboards.p2p_board import add_ad_board
+from keyboards.p2p_board import add_ad_board, buy_or_sell_board
 
 from database.balancedb import wallet, get_balance, add_btc, add_usdt, add_xmr
 from database.check_hash import checker_hash
 from database.settingsdb import settings_starts, change_fiat, check_fiat
+from database.addb import creationad, new_ad_buy, new_ad_sell
 
 from states.hash_state import Check_hash_btc, Check_hash_usdt, Check_hash_xmr
 from states.output_crypto import output_btc, output_xmr, output_usdt
@@ -36,6 +37,7 @@ bot = Bot(token=TOKEN)
 dp = Dispatcher(bot, storage=storage)
 
 
+# Переход в админку
 @dp.message_handler(commands=['admin'])
 async def admin_panel(message: types.Message):
     if message.from_user.id in admins:
@@ -45,6 +47,7 @@ async def admin_panel(message: types.Message):
         await bot.send_message(message.from_user.id, f"{hook.text}")
 
 
+# Старт бота
 @dp.message_handler(commands=['start'])
 async def process_start_command(message: types.Message):
     settings_starts(message.from_user.id)
@@ -53,6 +56,7 @@ async def process_start_command(message: types.Message):
         reply_markup=mainboard)
 
 
+# Ввод или вывод валюты
 @dp.callback_query_handler(text=["take_on", "take_off"])
 async def balance(callback: types.CallbackQuery):
     if callback.data == "take_on":
@@ -62,6 +66,7 @@ async def balance(callback: types.CallbackQuery):
         await bot.send_message(callback.from_user.id, "Выберете валюту для вывода:", reply_markup=take_off_crypto_board)
 
 
+# Выбор крипты для ввода
 @dp.callback_query_handler(text=['btc_on', 'btc_off', 'usdt_on', 'usdt_off', 'xmr_on', 'xmr_off'])
 async def balance_change(callback: types.CallbackQuery):
     if callback.data == "btc_on":
@@ -86,11 +91,14 @@ async def balance_change(callback: types.CallbackQuery):
         await bot.send_message(callback.from_user.id, f"{xmr_output_balance} XMR доступно для вывода\n\nВведите адресс на который будут отправлены XMR:")
         await output_xmr.send_to.set()
 
+
+# Начала блока состояний для указания сумы отправки и адреса отправки
 @dp.message_handler(state=output_btc.send_to)
 async def btc_send_address(message: types.Message, state: FSMContext):
     await state.update_data(btc_address=message.text)
     await message.answer("Введите сумму отправки: ")
     await output_btc.next()
+
 
 @dp.message_handler(state=output_btc.amount)
 async def btc_send_amount(message: types.Message, state: FSMContext):
@@ -111,6 +119,7 @@ async def usdt_send_address(message: types.Message, state: FSMContext):
     await message.answer("Введите сумму отправки: ")
     await output_usdt.next()
 
+
 @dp.message_handler(state=output_usdt.amount)
 async def usdt_send_amount(message: types.Message, state: FSMContext):
     await state.update_data(amount_send=message.text)
@@ -129,6 +138,7 @@ async def xmr_send_address(message: types.Message, state: FSMContext):
     await message.answer("Введите сумму отправки: ")
     await output_xmr.next()
 
+
 @dp.message_handler(state=output_xmr.amount)
 async def xmr_send_amount(message: types.Message, state: FSMContext):
     await state.update_data(amount_send=message.text)
@@ -140,7 +150,10 @@ async def xmr_send_amount(message: types.Message, state: FSMContext):
         add_xmr(message.from_user.id, -float(data['amount_send']))
         await bot.send_message(message.from_user.id, "Скоро средства поступят на кошелек")
     await state.finish()
+# Конец блока состояний для указания сумы отправки и адреса отправки
 
+
+# Проверка hash транзакции
 @dp.callback_query_handler(text=["btc_success", "usdt_success", "xmr_success"])
 async def check_hash(callback: types.CallbackQuery):
     if callback.data == "btc_success":
@@ -154,6 +167,7 @@ async def check_hash(callback: types.CallbackQuery):
         await Check_hash_xmr.user_hash_xmr.set()
 
 
+# Блок зачисления крипты на счет пользователя
 @dp.message_handler(state=Check_hash_btc.user_hash_btc)
 async def get_btc_hash(message: types.Message, state: FSMContext):
     await state.update_data(hash=message.text)
@@ -213,23 +227,43 @@ async def get_xmr_hash(message: types.Message, state: FSMContext):
     else:
         await bot.send_message(message.from_user.id, "Вы пытаетесь использовать hash повторно")
 
+# Конец блока зачисления крипты на счет пользователя
 
-@dp.callback_query_handler(text=['lang', 'fiat'])
-async def settings(callback: types.CallbackQuery):
-    if callback.data == 'fiat':
-        await bot.send_message(callback.from_user.id, "Фиат доступный на данный момент: ", reply_markup=fiat_board)
 
+# Вывод объявлений и добавление новых
 @dp.callback_query_handler(text=['ad'])
 async def p2p_board_ad(callback: types.CallbackQuery):
     if callback.data == 'ad':
         await bot.send_message(callback.from_user.id, "Здесь находятся все ваши объявления", reply_markup=add_ad_board)
 
+
+# Блок добавления объявления
 @dp.callback_query_handler(text=['add_new_ad'])
 async def p2p_add_new_ad(callback: types.CallbackQuery):
     if callback.data == 'add_new_ad':
-        await bot.send_message(callback.from_user.id, "Переход к созданию нового объявления")
+        creationad(callback.from_user.id)
+        await bot.send_message(callback.from_user.id, "Выберете тип объявления", reply_markup=buy_or_sell_board)
 
-@dp.callback_query_handler()
+
+@dp.callback_query_handler(text=["create_buy_ad", "create_sell_ad", "back_to"])
+async def p2p_choose_type(callback: types.CallbackQuery):
+    if callback.data == "create_buy_ad":
+        await bot.send_message(callback.from_user.id, "Объявление на покупку")
+    elif callback.data == "create_sell_ad":
+        await bot.send_message(callback.from_user.id, "Объявление на продажу создано")
+    elif callback.data == "back_to":
+        await bot.send_message(callback.from_user.id, "Здесь находятся все ваши объявления", reply_markup=add_ad_board)
+
+
+# Настройки
+@dp.callback_query_handler(text=['lang', 'fiat'])
+async def settings(callback: types.CallbackQuery):
+    if callback.data == 'fiat':
+        await bot.send_message(callback.from_user.id, "Фиат доступный на данный момент: ", reply_markup=fiat_board)
+
+
+# Смена валюты
+@dp.callback_query_handler(text=['USD', 'KZT', 'UAH', 'CNY', 'VND', 'BRL', 'IRR', 'RUB', 'TRY', 'AED', 'SAR', 'EGP'])
 async def choose_fiat(callback: types.CallbackQuery):
     fiats = ['USD', 'KZT', 'UAH', 'CNY', 'VND', 'BRL', 'IRR', 'RUB', 'TRY', 'AED', 'SAR', 'EGP']
     if callback.data in fiats:
