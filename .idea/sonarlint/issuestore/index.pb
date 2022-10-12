@@ -10,6 +10,4 @@ K
 F
 database/check_hash.py,e\a\ea09ce7702e0596c0b92f884ad265ed0cf4456cf
 F
-keyboards/mainboard.py,d\f\dfa506e3d0d77cd063fbfed35f6d604f1c81a6d9
-F
 utils/create_wallet.py,c/8/c84e28c284a53b23d7cdac5824afe9d09d33807c

@@ -1,27 +1,27 @@
 pay_methods = {
     'EGP': {
-        "bank": ["sar", "dcp"],
-        "online_wallet": [],
-        "world": [],
-        "crypto": [],
-        "other": []
+        "bank": ["CIB Bank", "NBE Bank", "Alex Bank", "Ahlibank"],
+        "online_wallet": ["Web Money", "Perfect Money", "Pay Pal"],
+        "world": ["Wise"],
+        "crypto": ["USTD TRC20", "BTC", "XMR"],
+        "other": ["soon"]
     },
     'SAR': {
-        "bank": [],
-        "online_wallet": [],
-        "world": [],
-        "crypto": [],
-        "other": []
+        "bank": ["Al Rajhi Bank", "Saudi National Bank", "Alinma Bank", "Riyad Bank", "Arab Bank"],
+        "online_wallet": ["Web Money", "Perfect Money", "Pay Pal"],
+        "world": ["Wise"],
+        "crypto": ["USTD TRC20", "BTC", "XMR"],
+        "other": ["soon"]
     },
     'AED': {
-        "bank": [],
-        "online_wallet": [],
-        "world": [],
-        "crypto": [],
-        "other": []
+        "bank": ["Emirates NBD Bank", "Dubai Islamic Bank", "Abu Dhabi Islamic Bank", "Mashreq"],
+        "online_wallet": ["Web Money", "Perfect Money", "Pay Pal"],
+        "world": ["Wise"],
+        "crypto": ["USTD TRC20", "BTC", "XMR"],
+        "other": ["soon"]
     },
     'TRY': {
-        "bank": [],
+        "bank": ["Ziraat", "DenizBank", "VakifBank", "AkBank"],
         "online_wallet": [],
         "world": [],
         "crypto": [],
@@ -85,13 +85,3 @@ pay_methods = {
     }
 }
 
-def parse_methods():
-    all_methods = []
-    for i in pay_methods:
-        all_methods.extend(i)
-        all_methods.extend(i)
-        all_methods.extend(i)
-        all_methods.extend(i)
-        all_methods.extend(i)
-    return all_methods
-print(parse_methods())
