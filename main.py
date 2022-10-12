@@ -15,7 +15,9 @@ from keyboards.balance_board import balance_base_board, take_off_crypto_board, t
     board_success_usdt, board_success_xmr
 from keyboards.settings_board import settings_board
 from keyboards.fiat_board import fiat_board
-from keyboards.p2p_board import add_ad_board, buy_or_sell_board, choose_p2p_crypto_board
+from keyboards.p2p_board import add_ad_board, buy_or_sell_board, choose_p2p_crypto_board, choose_p2p_paytype, \
+    choose_p2p_paymethod
+from keyboards.pay_methods import parse_methods
 
 from database.balancedb import wallet, get_balance, add_btc, add_usdt, add_xmr
 from database.check_hash import checker_hash
@@ -29,6 +31,7 @@ from utils.btcscan import btc_hash_scaner
 from utils.tronscan import tron_hash_scaner
 from utils.xmrscan import xmr_hash_scaner
 from utils.binancegetprice import getprice
+
 
 import requests
 
@@ -80,15 +83,18 @@ async def balance_change(callback: types.CallbackQuery):
                                parse_mode=types.ParseMode.HTML, reply_markup=board_success_xmr)
     elif callback.data == "btc_off":
         btc_output_balance = get_balance(callback.from_user.id)[0]
-        await bot.send_message(callback.from_user.id, f"{btc_output_balance} BTC доступно для вывода\n\nВведите адресс на который будут отправлены BTC: ")
+        await bot.send_message(callback.from_user.id,
+                               f"{btc_output_balance} BTC доступно для вывода\n\nВведите адресс на который будут отправлены BTC: ")
         await output_btc.send_to.set()
     elif callback.data == "usdt_off":
         usdt_output_balance = get_balance(callback.from_user.id)[1]
-        await bot.send_message(callback.from_user.id, f"{usdt_output_balance} USDT доступно для вывода\n\nВведите адресс на который будут отправлены USDT:")
+        await bot.send_message(callback.from_user.id,
+                               f"{usdt_output_balance} USDT доступно для вывода\n\nВведите адресс на который будут отправлены USDT:")
         await output_usdt.send_to.set()
     elif callback.data == "xmr_off":
         xmr_output_balance = get_balance(callback.from_user.id)[2]
-        await bot.send_message(callback.from_user.id, f"{xmr_output_balance} XMR доступно для вывода\n\nВведите адресс на который будут отправлены XMR:")
+        await bot.send_message(callback.from_user.id,
+                               f"{xmr_output_balance} XMR доступно для вывода\n\nВведите адресс на который будут отправлены XMR:")
         await output_xmr.send_to.set()
 
 
@@ -107,7 +113,9 @@ async def btc_send_amount(message: types.Message, state: FSMContext):
     if float(data['amount_send']) > float(get_balance(message.from_user.id)[0]):
         await bot.send_message(message.from_user.id, "❌ Недостаточно средств для перевода")
     else:
-        await bot.send_message(-748498807, f"Адрес вывода BTC: <code>{data['btc_address']}</code>\n\nСумма к отправке: <code>{data['amount_send']}</code>\n\nПользователь: {message.from_user.id}", parse_mode=types.ParseMode.HTML)
+        await bot.send_message(-748498807,
+                               f"Адрес вывода BTC: <code>{data['btc_address']}</code>\n\nСумма к отправке: <code>{data['amount_send']}</code>\n\nПользователь: {message.from_user.id}",
+                               parse_mode=types.ParseMode.HTML)
         add_btc(message.from_user.id, -float(data['amount_send']))
         await bot.send_message(message.from_user.id, "Скоро средства поступят на кошелек")
     await state.finish()
@@ -127,7 +135,9 @@ async def usdt_send_amount(message: types.Message, state: FSMContext):
     if float(data['amount_send']) > float(get_balance(message.from_user.id)[1]):
         await bot.send_message(message.from_user.id, "❌ Недостаточно средств для перевода")
     else:
-        await bot.send_message(-748498807, f"Адрес вывода USDT: <code>{data['usdt_address']}</code>\n\nСумма к отправке: <code>{data['amount_send']}</code>\n\nПользователь: {message.from_user.id}", parse_mode=types.ParseMode.HTML)
+        await bot.send_message(-748498807,
+                               f"Адрес вывода USDT: <code>{data['usdt_address']}</code>\n\nСумма к отправке: <code>{data['amount_send']}</code>\n\nПользователь: {message.from_user.id}",
+                               parse_mode=types.ParseMode.HTML)
         add_usdt(message.from_user.id, -float(data['amount_send']))
         await bot.send_message(message.from_user.id, "Скоро средства поступят на кошелек")
     await state.finish()
@@ -147,10 +157,14 @@ async def xmr_send_amount(message: types.Message, state: FSMContext):
     if float(data['amount_send']) > float(get_balance(message.from_user.id)[2]):
         await bot.send_message(message.from_user.id, "❌ Недостаточно средств для перевода")
     else:
-        await bot.send_message(-748498807, f"Адрес вывода XMR: <code>{data['xmr_address']}</code>\n\nСумма к отправке: <code>{data['amount_send']}</code>\n\nПользователь: {message.from_user.id}", parse_mode=types.ParseMode.HTML)
+        await bot.send_message(-748498807,
+                               f"Адрес вывода XMR: <code>{data['xmr_address']}</code>\n\nСумма к отправке: <code>{data['amount_send']}</code>\n\nПользователь: {message.from_user.id}",
+                               parse_mode=types.ParseMode.HTML)
         add_xmr(message.from_user.id, -float(data['amount_send']))
         await bot.send_message(message.from_user.id, "Скоро средства поступят на кошелек")
     await state.finish()
+
+
 # Конец блока состояний для указания сумы отправки и адреса отправки
 
 
@@ -228,6 +242,7 @@ async def get_xmr_hash(message: types.Message, state: FSMContext):
     else:
         await bot.send_message(message.from_user.id, "Вы пытаетесь использовать hash повторно")
 
+
 # Конец блока зачисления крипты на счет пользователя
 
 
@@ -262,11 +277,19 @@ async def p2p_choose_type(callback: types.CallbackQuery):
 async def p2p_choose_crypto(callback: types.CallbackQuery):
     update_adcrypto(callback.from_user.id, callback.data)
     update_fiat(callback.from_user.id)
-    await bot.send_message(callback.from_user.id, "Критпа выбрана")
+    await bot.send_message(callback.from_user.id, "Выбор способа оплаты", reply_markup=choose_p2p_paytype)
 
 
-@dp.callback_query_handler()
+@dp.callback_query_handler(text=["other", "crypto", "world", "online_wallet", "bank"])
+async def p2p_choose_paytype(callback: types.CallbackQuery):
+    await bot.send_message(callback.from_user.id, "Выбор метода оплаты",
+                           reply_markup=choose_p2p_paymethod(check_fiat(callback.from_user.id)[0], callback.data))
+    print(parse_methods())
 
+@dp.callback_query_handler(text=parse_methods())
+async def p2p_choose_methods(callback: types.CallbackQuery):
+
+    await bot.send_message(callback.from_user.id, callback.data)
 
 
 # Настройки
