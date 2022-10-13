@@ -292,7 +292,7 @@ async def p2p_choose_paytype(callback: types.CallbackQuery):
 @dp.callback_query_handler(text=check_all_data())
 async def p2p_choose_methods(callback: types.CallbackQuery):
     update_pay_method(callback.from_user.id, callback.data)
-    await bot.send_message(callback.from_user.id, "Напишите реквизиты для получения/отправки оплаты")
+    await bot.send_message(callback.from_user.id, "Напишите реквизиты для получения/отправки оплаты", reply_markup=types.ReplyKeyboardRemove())
     await get_ad_data.get_requisites.set()
 
 
@@ -327,7 +327,7 @@ async def p2p_get_price(message: types.Message, state: FSMContext):
     update_price(message.from_user.id, data["price"])
     update_amount(message.from_user.id, data["amount"])
     new_ad(message.from_user.id)
-    await bot.send_message(message.from_user.id, "Объявление создано!")
+    await bot.send_message(message.from_user.id, "Объявление создано!", reply_markup=mainboard)
 
 
 # Настройки
