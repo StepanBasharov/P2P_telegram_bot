@@ -1,5 +1,6 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from keyboards.pay_methods import pay_methods
+from keyboards.pay_methods import choose_pay_method_from_json
+from database.addb import show_ads
 
 buy_button = InlineKeyboardButton("🟢 Купить", callback_data='buy')
 sell_button = InlineKeyboardButton("🟥 Продать", callback_data='sell')
@@ -8,11 +9,7 @@ orders = InlineKeyboardButton("🪧 Открытые сделки", callback_dat
 
 p2p_base_board = InlineKeyboardMarkup().row(buy_button, sell_button).row(my_ad).row(orders)
 
-add_ad = InlineKeyboardButton("➕ Разместить новое объявление", callback_data='add_new_ad')
-
-add_ad_board = InlineKeyboardMarkup().row(add_ad)
-
-#Кнопка возврата к прошолому выбору
+# Кнопка возврата к прошолому выбору
 back_button = InlineKeyboardButton("❌ Назад", callback_data="back_to")
 
 # Кнопки выбора типа объявления ( Buy or Sell)
@@ -37,13 +34,24 @@ other = InlineKeyboardButton("Другое", callback_data="other")
 
 choose_p2p_paytype = InlineKeyboardMarkup().row(bank_transfer, online_wallet).row(world_transfer, crypto).row(other)
 
+
 # Выбор метода оплаты
 def choose_p2p_paymethod(fiat, method):
     pay_methods_board = InlineKeyboardMarkup()
-    for i in pay_methods[fiat][method]:
+    data = choose_pay_method_from_json(fiat, method)
+    for i in data:
         pay_methods_board.row(InlineKeyboardButton(i, callback_data=i))
     return pay_methods_board
 
 
-
-
+def show_ads_board(user_id):
+    my_ads_board = InlineKeyboardMarkup()
+    data = show_ads(user_id)
+    for i in data:
+        if i[4] == "BUY":
+            button_text = f"🟢{i[4]}, {i[3]}, {i[2]}, {i[1]}"
+        else:
+            button_text = f"🟥{i[4]}, {i[3]}, {i[2]}, {i[1]}"
+        my_ads_board.row(InlineKeyboardButton(button_text, callback_data=i[0]))
+    my_ads_board.row(InlineKeyboardButton("➕ Разместить новое объявление", callback_data='add_new_ad'))
+    return my_ads_board

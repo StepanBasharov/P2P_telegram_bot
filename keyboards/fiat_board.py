@@ -1,6 +1,5 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-
 egp = InlineKeyboardButton("🇪🇬 EGP", callback_data='EGP')
 sar = InlineKeyboardButton("🇸🇦 SAR", callback_data='SAR')
 aed = InlineKeyboardButton("🇦🇪 AED", callback_data='AED')

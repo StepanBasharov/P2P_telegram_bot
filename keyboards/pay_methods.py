@@ -1,87 +1,27 @@
-pay_methods = {
-    'EGP': {
-        "bank": ["CIB Bank", "NBE Bank", "Alex Bank", "Ahlibank"],
-        "online_wallet": ["Web Money", "Perfect Money", "Pay Pal"],
-        "world": ["Wise"],
-        "crypto": ["USTD TRC20", "BTC", "XMR"],
-        "other": ["soon"]
-    },
-    'SAR': {
-        "bank": ["Al Rajhi Bank", "Saudi National Bank", "Alinma Bank", "Riyad Bank", "Arab Bank"],
-        "online_wallet": ["Web Money", "Perfect Money", "Pay Pal"],
-        "world": ["Wise"],
-        "crypto": ["USTD TRC20", "BTC", "XMR"],
-        "other": ["soon"]
-    },
-    'AED': {
-        "bank": ["Emirates NBD Bank", "Dubai Islamic Bank", "Abu Dhabi Islamic Bank", "Mashreq"],
-        "online_wallet": ["Web Money", "Perfect Money", "Pay Pal"],
-        "world": ["Wise"],
-        "crypto": ["USTD TRC20", "BTC", "XMR"],
-        "other": ["soon"]
-    },
-    'TRY': {
-        "bank": ["Ziraat", "DenizBank", "VakifBank", "AkBank"],
-        "online_wallet": [],
-        "world": [],
-        "crypto": [],
-        "other": []
-    },
-    'RUB': {
-        "bank": [],
-        "online_wallet": [],
-        "world": [],
-        "crypto": [],
-        "other": []
-    },
-    'IRR': {
-        "bank": [],
-        "online_wallet": [],
-        "world": [],
-        "crypto": [],
-        "other": []
-    },
-    'BRL': {
-        "bank": [],
-        "online_wallet": [],
-        "world": [],
-        "crypto": [],
-        "other": []
-    },
-    'VND': {
-        "bank": [],
-        "online_wallet": [],
-        "world": [],
-        "crypto": [],
-        "other": []
-    },
-    'CNY': {
-        "bank": [],
-        "online_wallet": [],
-        "world": [],
-        "crypto": [],
-        "other": []
-    },
-    'UAH': {
-        "bank": [],
-        "online_wallet": [],
-        "world": [],
-        "crypto": [],
-        "other": []
-    },
-    'KZT': {
-        "bank": [],
-        "online_wallet": [],
-        "world": [],
-        "crypto": [],
-        "other": []
-    },
-    'USD': {
-        "bank": [],
-        "online_wallet": [],
-        "world": [],
-        "crypto": [],
-        "other": []
-    }
-}
+import json
 
+
+def choose_pay_method_from_json(fiat, method):
+    with open("keyboards/pay_methods.json", "r") as f:
+        data = json.loads(f.read())
+    return data[fiat][method]
+
+
+def add_methods_to_json(fiat, methods, method):
+    with open("keyboards/pay_methods.json", "r") as f:
+        data = json.loads(f.read())
+    new_method = data[fiat][methods]
+    new_method.append(method)
+    data[fiat][methods] = new_method
+    with open("keyboards/pay_methods.json", "w", encoding='utf-8') as f:
+        json.dump(data, f, indent=4)
+
+
+def check_all_data():
+    with open("keyboards/pay_methods.json", "r") as f:
+        data = json.loads(f.read())
+    main_list = []
+    for i in data:
+        for j in data[i]:
+            main_list.extend(data[i][j])
+    return list(set(main_list))

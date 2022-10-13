@@ -15,23 +15,24 @@ from keyboards.balance_board import balance_base_board, take_off_crypto_board, t
     board_success_usdt, board_success_xmr
 from keyboards.settings_board import settings_board
 from keyboards.fiat_board import fiat_board
-from keyboards.p2p_board import add_ad_board, buy_or_sell_board, choose_p2p_crypto_board, choose_p2p_paytype, \
+from keyboards.p2p_board import show_ads_board, buy_or_sell_board, choose_p2p_crypto_board, choose_p2p_paytype, \
     choose_p2p_paymethod
-from keyboards.pay_methods import parse_methods
+from keyboards.pay_methods import check_all_data
 
 from database.balancedb import wallet, get_balance, add_btc, add_usdt, add_xmr
 from database.check_hash import checker_hash
 from database.settingsdb import settings_starts, change_fiat, check_fiat
-from database.addb import creationad, new_ad_buy, new_ad_sell, update_adtype, update_adcrypto, update_fiat
+from database.addb import creationad, new_ad, update_adtype, update_adcrypto, update_fiat, \
+    update_pay_method, update_requisites, update_limits, update_amount, update_price
 
 from states.hash_state import Check_hash_btc, Check_hash_usdt, Check_hash_xmr
 from states.output_crypto import output_btc, output_xmr, output_usdt
+from states.ad_state import get_ad_data
 
 from utils.btcscan import btc_hash_scaner
 from utils.tronscan import tron_hash_scaner
 from utils.xmrscan import xmr_hash_scaner
 from utils.binancegetprice import getprice
-
 
 import requests
 
@@ -250,7 +251,8 @@ async def get_xmr_hash(message: types.Message, state: FSMContext):
 @dp.callback_query_handler(text=['ad'])
 async def p2p_board_ad(callback: types.CallbackQuery):
     if callback.data == 'ad':
-        await bot.send_message(callback.from_user.id, "Здесь находятся все ваши объявления", reply_markup=add_ad_board)
+        await bot.send_message(callback.from_user.id, "Здесь находятся все ваши объявления",
+                               reply_markup=show_ads_board(callback.from_user.id))
 
 
 # Блок добавления объявления
@@ -270,7 +272,8 @@ async def p2p_choose_type(callback: types.CallbackQuery):
         update_adtype(callback.from_user.id, "SELL")
         await bot.send_message(callback.from_user.id, "Выбор криптовалюты", reply_markup=choose_p2p_crypto_board)
     elif callback.data == "back_to":
-        await bot.send_message(callback.from_user.id, "Здесь находятся все ваши объявления", reply_markup=add_ad_board)
+        await bot.send_message(callback.from_user.id, "Здесь находятся все ваши объявления",
+                               reply_markup=show_ads_board(callback.from_user.id))
 
 
 @dp.callback_query_handler(text=["BTC", "USDT", "XMR"])
@@ -284,12 +287,47 @@ async def p2p_choose_crypto(callback: types.CallbackQuery):
 async def p2p_choose_paytype(callback: types.CallbackQuery):
     await bot.send_message(callback.from_user.id, "Выбор метода оплаты",
                            reply_markup=choose_p2p_paymethod(check_fiat(callback.from_user.id)[0], callback.data))
-    print(parse_methods())
 
-@dp.callback_query_handler(text=parse_methods())
+
+@dp.callback_query_handler(text=check_all_data())
 async def p2p_choose_methods(callback: types.CallbackQuery):
+    update_pay_method(callback.from_user.id, callback.data)
+    await bot.send_message(callback.from_user.id, "Напишите реквизиты для получения/отправки оплаты")
+    await get_ad_data.get_requisites.set()
 
-    await bot.send_message(callback.from_user.id, callback.data)
+
+@dp.message_handler(state=get_ad_data.get_requisites)
+async def p2p_get_requisites(message: types.Message, state: FSMContext):
+    await state.update_data(requisites=message.text)
+    await bot.send_message(message.from_user.id, "Укажите лимиты\nПример: 1-100")
+    await get_ad_data.next()
+
+
+@dp.message_handler(state=get_ad_data.get_limits)
+async def p2p_get_limits(message: types.Message, state: FSMContext):
+    await state.update_data(limits=message.text)
+    await bot.send_message(message.from_user.id, "Укажите количество криптовалюты")
+    await get_ad_data.next()
+
+
+@dp.message_handler(state=get_ad_data.get_amount)
+async def p2p_get_amount(message: types.Message, state: FSMContext):
+    await state.update_data(amount=message.text)
+    await bot.send_message(message.from_user.id, "Укажите цену (1% от суммы сделки в криптовалюте забирает сервис)")
+    await get_ad_data.next()
+
+
+@dp.message_handler(state=get_ad_data.get_price)
+async def p2p_get_price(message: types.Message, state: FSMContext):
+    await state.update_data(price=message.text)
+    data = await state.get_data()
+    await state.finish()
+    update_requisites(message.from_user.id, data["requisites"])
+    update_limits(message.from_user.id, data["limits"])
+    update_price(message.from_user.id, data["price"])
+    update_amount(message.from_user.id, data["amount"])
+    new_ad(message.from_user.id)
+    await bot.send_message(message.from_user.id, "Объявление создано!")
 
 
 # Настройки

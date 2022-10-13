@@ -4,6 +4,7 @@ def test(x):
     else:
         return False
 
+
 a = test(0)
 
 if a:

@@ -33,4 +33,3 @@ board_success_usdt = InlineKeyboardMarkup().row(button_success_usdt)
 button_success_xmr = InlineKeyboardButton("XMR отправлены", callback_data="xmr_success")
 
 board_success_xmr = InlineKeyboardMarkup().row(button_success_xmr)
-

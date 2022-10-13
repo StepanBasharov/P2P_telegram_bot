@@ -8,6 +8,5 @@ button_settings = KeyboardButton('⚙ Настройки')
 button_support = KeyboardButton('🚨 Поддержка')
 button_faq = KeyboardButton('📌 FAQ')
 
-
 mainboard = ReplyKeyboardMarkup(resize_keyboard=True)
 mainboard.row(button_p2p, button_balance).row(button_settings).row(button_support, button_faq)

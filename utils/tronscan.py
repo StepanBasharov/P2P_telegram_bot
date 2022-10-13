@@ -1,5 +1,6 @@
 import requests
 
+
 def tron_hash_scaner(hash, wallet):
     try:
         resp = requests.get(f"https://apilist.tronscanapi.com/api/transaction-info?hash={hash}")
