@@ -18,6 +18,7 @@ from keyboards.fiat_board import fiat_board
 from keyboards.p2p_board import show_ads_board, buy_or_sell_board, choose_p2p_crypto_board, choose_p2p_paytype, \
     choose_p2p_paymethod
 from keyboards.pay_methods import check_all_data
+from keyboards.p2p_board import create_order_sell, create_order_buy
 
 from database.balancedb import wallet, get_balance, add_btc, add_usdt, add_xmr
 from database.check_hash import checker_hash
@@ -328,6 +329,32 @@ async def p2p_get_price(message: types.Message, state: FSMContext):
     update_amount(message.from_user.id, data["amount"])
     new_ad(message.from_user.id)
     await bot.send_message(message.from_user.id, "Объявление создано!", reply_markup=mainboard)
+#Конец блока создания объявлений
+
+
+#Блок взаимодействия пользователей
+@dp.callback_query_handler(text=['buy', 'sell'])
+async def start_p2p_extend(callback: types.CallbackQuery):
+    if callback.data == 'buy':
+        await bot.send_message(callback.from_user.id, "Выберете криптовалюту", reply_markup=create_order_buy)
+    elif callback.data == 'sell':
+        await bot.send_message(callback.from_user.id, "Выберете криптовалюту", reply_markup=create_order_sell)
+
+
+@dp.callback_query_handler(text=["btc_buy", "usdt_buy", "xmr_buy", "btc_sell", "usdt_sell", "xmr_sell"])
+async def show_p2p_orders(callback: types.CallbackQuery):
+    if callback.data == "btc_buy":
+        pass
+    elif callback.data == "usdt_buy":
+        pass
+    elif callback.data == "xmr_buy":
+        pass
+    elif callback.data == "btc_sell":
+        pass
+    elif callback.data == "usdt_sell":
+        pass
+    elif callback.data == "xmr_sell":
+        pass
 
 
 # Настройки

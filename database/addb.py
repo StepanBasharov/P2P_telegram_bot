@@ -99,3 +99,7 @@ def new_ad_buy(user_id, crypto, fiat, pay_method, requisites, limits, amount, pr
 def show_ads(user_id):
     sql.execute("SELECT ad_id, price, pay_method, crypto, ad_type FROM ads WHERE user_id = (?)", (user_id,))
     return sql.fetchall()
+
+
+def show_ads_to_order(fiat, crypto):
+    pass

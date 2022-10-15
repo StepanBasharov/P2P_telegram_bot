@@ -11,3 +11,17 @@ F
 database/check_hash.py,e\a\ea09ce7702e0596c0b92f884ad265ed0cf4456cf
 F
 utils/create_wallet.py,c/8/c84e28c284a53b23d7cdac5824afe9d09d33807c
+F
+keyboards/mainboard.py,d/f/dfa506e3d0d77cd063fbfed35f6d604f1c81a6d9
+J
+keyboards/balance_board.py,e/6/e65f0d1ba50b5d1d4b9976ca3bb37c31adb39e35
+@
+requirements.txt,1/9/19359a61ae2446b51b549167b014da2fcf265768
+H
+keyboards/pay_methods.py,6/8/68b9fd29ea6bdd04ea0aff6e530c9610f36439b4
+D
+database/settings.db,2/d/2d301aed825cde26fc28d94deabc920aa7f9ef41
+A
+database/adsdb.db,b/1/b19eb36dfc46558dd5f35f9a65cd19f26c197886
+F
+database/settingsdb.py,1/7/1762807385d56e9253093f71212695736ef9bfce

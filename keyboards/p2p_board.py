@@ -9,6 +9,18 @@ orders = InlineKeyboardButton("🪧 Открытые сделки", callback_dat
 
 p2p_base_board = InlineKeyboardMarkup().row(buy_button, sell_button).row(my_ad).row(orders)
 
+btc_buy = InlineKeyboardButton("BTC", callback_data="btc_buy")
+usdt_buy = InlineKeyboardButton("USDT(TRC20)", callback_data="usdt_buy")
+xmr_buy = InlineKeyboardButton("XMR", callback_data="xmr_buy")
+
+create_order_buy = InlineKeyboardMarkup().row(btc_buy).row(usdt_buy).row(xmr_buy)
+
+btc_sell = InlineKeyboardButton("BTC", callback_data="btc_sell")
+usdt_sell = InlineKeyboardButton("USDT(TRC20)", callback_data="usdt_sell")
+xmr_sell = InlineKeyboardButton("XMR", callback_data="xmr_sell")
+
+create_order_sell = InlineKeyboardMarkup().row(btc_sell).row(usdt_sell).row(xmr_sell)
+
 # Кнопка возврата к прошолому выбору
 back_button = InlineKeyboardButton("❌ Назад", callback_data="back_to")
 
