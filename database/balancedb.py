@@ -17,6 +17,7 @@ def wallet(user_id):
     sql.execute(f"SELECT user_id FROM wallets WHERE user_id = {user_id}")
     if sql.fetchone() is None:
         sql.execute("INSERT INTO wallets VALUES (?, ?, ?, ?)", (user_id, 0.0, 0.0, 0.0))
+        db.commit()
         return "Success"
     else:
         return "Already"

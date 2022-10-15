@@ -16,15 +16,18 @@ from keyboards.balance_board import balance_base_board, take_off_crypto_board, t
 from keyboards.settings_board import settings_board
 from keyboards.fiat_board import fiat_board
 from keyboards.p2p_board import show_ads_board, buy_or_sell_board, choose_p2p_crypto_board, choose_p2p_paytype, \
-    choose_p2p_paymethod
-from keyboards.pay_methods import check_all_data
-from keyboards.p2p_board import create_order_sell, create_order_buy
+    choose_p2p_paymethod, choose_order_paymethod
+from keyboards.pay_methods import check_all_data, check_all_data_order
+from keyboards.p2p_board import create_order_board, choose_p2p_paytype_order, show_ads_to_create_order_board
+from keyboards.p2p_board import start_exthenge_board
 
 from database.balancedb import wallet, get_balance, add_btc, add_usdt, add_xmr
 from database.check_hash import checker_hash
 from database.settingsdb import settings_starts, change_fiat, check_fiat
 from database.addb import creationad, new_ad, update_adtype, update_adcrypto, update_fiat, \
-    update_pay_method, update_requisites, update_limits, update_amount, update_price
+    update_pay_method, update_requisites, update_limits, update_amount, update_price, get_all_ads, get_ad_data_order
+from database.orders import search_order, set_order_paymethod, set_order_crypto, set_order_fiat, set_order_ad_type, \
+    start_order
 
 from states.hash_state import Check_hash_btc, Check_hash_usdt, Check_hash_xmr
 from states.output_crypto import output_btc, output_xmr, output_usdt
@@ -293,7 +296,8 @@ async def p2p_choose_paytype(callback: types.CallbackQuery):
 @dp.callback_query_handler(text=check_all_data())
 async def p2p_choose_methods(callback: types.CallbackQuery):
     update_pay_method(callback.from_user.id, callback.data)
-    await bot.send_message(callback.from_user.id, "Напишите реквизиты для получения/отправки оплаты", reply_markup=types.ReplyKeyboardRemove())
+    await bot.send_message(callback.from_user.id, "Напишите реквизиты для получения/отправки оплаты",
+                           reply_markup=types.ReplyKeyboardRemove())
     await get_ad_data.get_requisites.set()
 
 
@@ -329,32 +333,62 @@ async def p2p_get_price(message: types.Message, state: FSMContext):
     update_amount(message.from_user.id, data["amount"])
     new_ad(message.from_user.id)
     await bot.send_message(message.from_user.id, "Объявление создано!", reply_markup=mainboard)
-#Конец блока создания объявлений
 
 
-#Блок взаимодействия пользователей
+# Конец блока создания объявлений
+
+
+# Блок взаимодействия пользователей
 @dp.callback_query_handler(text=['buy', 'sell'])
 async def start_p2p_extend(callback: types.CallbackQuery):
     if callback.data == 'buy':
-        await bot.send_message(callback.from_user.id, "Выберете криптовалюту", reply_markup=create_order_buy)
+        set_order_ad_type(callback.from_user.id, "BUY")
+        await bot.send_message(callback.from_user.id, "Выберете криптовалюту", reply_markup=create_order_board)
     elif callback.data == 'sell':
-        await bot.send_message(callback.from_user.id, "Выберете криптовалюту", reply_markup=create_order_sell)
+        set_order_ad_type(callback.from_user.id, "SELL")
+        await bot.send_message(callback.from_user.id, "Выберете криптовалюту", reply_markup=create_order_board)
 
 
-@dp.callback_query_handler(text=["btc_buy", "usdt_buy", "xmr_buy", "btc_sell", "usdt_sell", "xmr_sell"])
-async def show_p2p_orders(callback: types.CallbackQuery):
-    if callback.data == "btc_buy":
-        pass
-    elif callback.data == "usdt_buy":
-        pass
-    elif callback.data == "xmr_buy":
-        pass
-    elif callback.data == "btc_sell":
-        pass
-    elif callback.data == "usdt_sell":
-        pass
-    elif callback.data == "xmr_sell":
-        pass
+@dp.callback_query_handler(text=["btc_order", "usdt_order", "xmr_order"])
+async def set_p2p_crypro_and_fiat(callback: types.CallbackQuery):
+    if callback.data == "btc_order":
+        set_order_crypto(callback.from_user.id, "BTC")
+        set_order_fiat(callback.from_user.id, check_fiat(callback.from_user.id)[0])
+        await bot.send_message(callback.from_user.id, "Выбор типа оплаты: ", reply_markup=choose_p2p_paytype_order)
+    elif callback.data == "usdt_order":
+        set_order_crypto(callback.from_user.id, "USDT")
+        set_order_fiat(callback.from_user.id, check_fiat(callback.from_user.id)[0])
+        await bot.send_message(callback.from_user.id, "Выбор типа оплаты: ", reply_markup=choose_p2p_paytype_order)
+    elif callback.data == "xmr_order":
+        set_order_crypto(callback.from_user.id, "XMR")
+        set_order_fiat(callback.from_user.id, check_fiat(callback.from_user.id)[0])
+        await bot.send_message(callback.from_user.id, "Выбор типа оплаты: ", reply_markup=choose_p2p_paytype_order)
+
+
+@dp.callback_query_handler(text=["other_order", "crypto_order", "world_order", "online_wallet_order", "bank_order"])
+async def set_p2p_paytype(callback: types.CallbackQuery):
+    await bot.send_message(callback.from_user.id, "Выбор метода оплаты",
+                           reply_markup=choose_order_paymethod(check_fiat(callback.from_user.id)[0], callback.data))
+
+
+@dp.callback_query_handler(text=check_all_data_order())
+async def set_p2p_pay_method(callback: types.CallbackQuery):
+    set_order_paymethod(callback.from_user.id, callback.data.split("_")[0])
+    await bot.send_message(callback.from_user.id, "Выберите объявление",
+                           reply_markup=show_ads_to_create_order_board(callback.from_user.id))
+
+
+@dp.callback_query_handler(text=get_all_ads())
+async def choose_ad_and_extchange(callback: types.CallbackQuery):
+    data = get_ad_data_order(callback.data)
+    text = f"Объявление №{callback.data}\n\nЦена: {data[0]}\n\nКриптовалюта: {data[2]}\n\n Метод оплаты: {data[1]}\n\n Пользователь: user{data[3]}"
+    await bot.send_message(callback.from_user.id, text, reply_markup=start_exthenge_board)
+    start_order(callback.from_user.id, data[3], callback.data)
+
+
+@dp.callback_query_handler(text=['start'])
+async def extenge(callback: types.CallbackQuery):
+    pass
 
 
 # Настройки
@@ -380,6 +414,7 @@ async def speak(msg: types.Message):
         await bot.send_message(msg.from_user.id,
                                "В этом разаделе вы можете соверишить p2p сделку, а бот выступит в качестве гаранта.",
                                reply_markup=p2p_base_board)
+        search_order(msg.from_user.id)
     elif msg.text == '💰 Баланс':
         wallet_creat = wallet(msg.from_user.id)
         if wallet_creat == "Success":

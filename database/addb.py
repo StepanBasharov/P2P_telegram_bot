@@ -101,5 +101,20 @@ def show_ads(user_id):
     return sql.fetchall()
 
 
-def show_ads_to_order(fiat, crypto):
-    pass
+def show_ads_to_order(fiat, crypto, pay_method, ad_type):
+    sql.execute(
+        "SELECT ad_id, price, pay_method, crypto, ad_type FROM ads WHERE crypto = (?) AND fiat = (?) AND pay_method = (?) AND ad_type = (?)",
+        (crypto, fiat, pay_method, ad_type))
+    return sql.fetchall()
+
+
+def get_all_ads():
+    sql.execute("SELECT ad_id FROM ads")
+    data = sql.fetchall()
+    new_data = [i[0] for i in data]
+    return new_data
+
+
+def get_ad_data_order(ad_id):
+    sql.execute("SELECT price, pay_method, crypto, user_id FROM ads WHERE ad_id = (?)", (ad_id,))
+    return sql.fetchone()
