@@ -1,7 +1,7 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from keyboards.pay_methods import choose_pay_method_from_json
 from database.addb import show_ads
-from database.orders import send_data_to_order
+from database.orders import send_data_to_order, get_order_id
 
 buy_button = InlineKeyboardButton("🟢 Купить", callback_data='buy')
 sell_button = InlineKeyboardButton("🟥 Продать", callback_data='sell')
@@ -50,8 +50,10 @@ other_order = InlineKeyboardButton("Другое", callback_data="other_order")
 choose_p2p_paytype_order = InlineKeyboardMarkup().row(bank_transfer_order, online_wallet_order).row(
     world_transfer_order, crypto_order).row(other_order)
 
-start_exthenge = InlineKeyboardButton("Начать обмен", callback_data='start')
-start_exthenge_board = InlineKeyboardMarkup().row(start_exthenge)
+def start_exthenge(order_id):
+    start_exthenge_button = InlineKeyboardButton("Начать обмен", callback_data=order_id)
+    start_exthenge_board = InlineKeyboardMarkup().row(start_exthenge_button)
+    return start_exthenge_board
 
 
 # Выбор метода оплаты
@@ -92,9 +94,9 @@ def show_ads_to_create_order_board(user_id):
         ads_to_order_board.row(InlineKeyboardButton("К сожалению объявлений нет", callback_data="ads_none"))
     else:
         for i in data:
-            if i[4] == "BUY":
-                button_text = f"🟢{i[3]}, {i[1]}, {i[2]}"
+            if i[4] == "SELL":
+                button_text = f"🟢 {i[3]}, {i[1]}, ({i[5]}), {i[2]}"
             else:
-                button_text = f"🟥{i[3]}, {i[1]}, {i[2]}"
+                button_text = f"🟥 {i[3]}, {i[1]}, ({i[5]}), {i[2]}"
             ads_to_order_board.row(InlineKeyboardButton(button_text, callback_data=i[0]))
     return ads_to_order_board

@@ -19,15 +19,13 @@ from keyboards.p2p_board import show_ads_board, buy_or_sell_board, choose_p2p_cr
     choose_p2p_paymethod, choose_order_paymethod
 from keyboards.pay_methods import check_all_data, check_all_data_order
 from keyboards.p2p_board import create_order_board, choose_p2p_paytype_order, show_ads_to_create_order_board
-from keyboards.p2p_board import start_exthenge_board
+from keyboards.p2p_board import start_exthenge
 
 from database.balancedb import wallet, get_balance, add_btc, add_usdt, add_xmr
 from database.check_hash import checker_hash
-from database.settingsdb import settings_starts, change_fiat, check_fiat
-from database.addb import creationad, new_ad, update_adtype, update_adcrypto, update_fiat, \
-    update_pay_method, update_requisites, update_limits, update_amount, update_price, get_all_ads, get_ad_data_order
-from database.orders import search_order, set_order_paymethod, set_order_crypto, set_order_fiat, set_order_ad_type, \
-    start_order
+from database.settingsdb import settings_starts, change_fiat
+from database.addb import *
+from database.orders import *
 
 from states.hash_state import Check_hash_btc, Check_hash_usdt, Check_hash_xmr
 from states.output_crypto import output_btc, output_xmr, output_usdt
@@ -67,6 +65,7 @@ async def process_start_command(message: types.Message):
 # Ввод или вывод валюты
 @dp.callback_query_handler(text=["take_on", "take_off"])
 async def balance(callback: types.CallbackQuery):
+    await callback.message.delete()
     if callback.data == "take_on":
         await bot.send_message(callback.from_user.id, "Выберете валюту для ввода:", reply_markup=take_on_crypro_board)
 
@@ -77,6 +76,7 @@ async def balance(callback: types.CallbackQuery):
 # Выбор крипты для ввода
 @dp.callback_query_handler(text=['btc_on', 'btc_off', 'usdt_on', 'usdt_off', 'xmr_on', 'xmr_off'])
 async def balance_change(callback: types.CallbackQuery):
+    await callback.message.delete()
     if callback.data == "btc_on":
         await bot.send_message(callback.from_user.id, f"Отправьте BTC на этот адрес <code>{BTC_address}</code>",
                                parse_mode=types.ParseMode.HTML, reply_markup=board_success_btc)
@@ -176,6 +176,7 @@ async def xmr_send_amount(message: types.Message, state: FSMContext):
 # Проверка hash транзакции
 @dp.callback_query_handler(text=["btc_success", "usdt_success", "xmr_success"])
 async def check_hash(callback: types.CallbackQuery):
+    await callback.message.delete()
     if callback.data == "btc_success":
         await bot.send_message(callback.from_user.id, "Отправьте пожалуйста hash для проверки")
         await Check_hash_btc.user_hash_btc.set()
@@ -254,6 +255,7 @@ async def get_xmr_hash(message: types.Message, state: FSMContext):
 # Вывод объявлений и добавление новых
 @dp.callback_query_handler(text=['ad'])
 async def p2p_board_ad(callback: types.CallbackQuery):
+    await callback.message.delete()
     if callback.data == 'ad':
         await bot.send_message(callback.from_user.id, "Здесь находятся все ваши объявления",
                                reply_markup=show_ads_board(callback.from_user.id))
@@ -262,6 +264,7 @@ async def p2p_board_ad(callback: types.CallbackQuery):
 # Блок добавления объявления
 @dp.callback_query_handler(text=['add_new_ad'])
 async def p2p_add_new_ad(callback: types.CallbackQuery):
+    await callback.message.delete()
     if callback.data == 'add_new_ad':
         creationad(callback.from_user.id)
         await bot.send_message(callback.from_user.id, "Выберете тип объявления", reply_markup=buy_or_sell_board)
@@ -269,6 +272,7 @@ async def p2p_add_new_ad(callback: types.CallbackQuery):
 
 @dp.callback_query_handler(text=["create_buy_ad", "create_sell_ad", "back_to"])
 async def p2p_choose_type(callback: types.CallbackQuery):
+    await callback.message.delete()
     if callback.data == "create_buy_ad":
         update_adtype(callback.from_user.id, "BUY")
         await bot.send_message(callback.from_user.id, "Выбор криптовалюты", reply_markup=choose_p2p_crypto_board)
@@ -282,6 +286,7 @@ async def p2p_choose_type(callback: types.CallbackQuery):
 
 @dp.callback_query_handler(text=["BTC", "USDT", "XMR"])
 async def p2p_choose_crypto(callback: types.CallbackQuery):
+    await callback.message.delete()
     update_adcrypto(callback.from_user.id, callback.data)
     update_fiat(callback.from_user.id)
     await bot.send_message(callback.from_user.id, "Выбор способа оплаты", reply_markup=choose_p2p_paytype)
@@ -289,12 +294,14 @@ async def p2p_choose_crypto(callback: types.CallbackQuery):
 
 @dp.callback_query_handler(text=["other", "crypto", "world", "online_wallet", "bank"])
 async def p2p_choose_paytype(callback: types.CallbackQuery):
+    await callback.message.delete()
     await bot.send_message(callback.from_user.id, "Выбор метода оплаты",
                            reply_markup=choose_p2p_paymethod(check_fiat(callback.from_user.id)[0], callback.data))
 
 
 @dp.callback_query_handler(text=check_all_data())
 async def p2p_choose_methods(callback: types.CallbackQuery):
+    await callback.message.delete()
     update_pay_method(callback.from_user.id, callback.data)
     await bot.send_message(callback.from_user.id, "Напишите реквизиты для получения/отправки оплаты",
                            reply_markup=types.ReplyKeyboardRemove())
@@ -304,35 +311,63 @@ async def p2p_choose_methods(callback: types.CallbackQuery):
 @dp.message_handler(state=get_ad_data.get_requisites)
 async def p2p_get_requisites(message: types.Message, state: FSMContext):
     await state.update_data(requisites=message.text)
-    await bot.send_message(message.from_user.id, "Укажите лимиты\nПример: 1-100")
+    await bot.send_message(message.from_user.id, "Укажите количество криптовалюты")
     await get_ad_data.next()
 
 
 @dp.message_handler(state=get_ad_data.get_limits)
 async def p2p_get_limits(message: types.Message, state: FSMContext):
-    await state.update_data(limits=message.text)
-    await bot.send_message(message.from_user.id, "Укажите количество криптовалюты")
+    await state.update_data(price=message.text)
+    update_price(message.from_user.id, message.text)
+    limit = float(check_amount(message.from_user.id)[0]) * float(check_price(message.from_user.id)[0])
+    if check_ad_type(message.from_user.id)[0] == "SELL":
+        await bot.send_message(message.from_user.id, f"Укажите лимиты\nДоступно: 1-{limit}")
+    else:
+        await bot.send_message(message.from_user.id, f"Укажите лимиты\nПример: 1-1000")
     await get_ad_data.next()
 
 
 @dp.message_handler(state=get_ad_data.get_amount)
 async def p2p_get_amount(message: types.Message, state: FSMContext):
-    await state.update_data(amount=message.text)
-    await bot.send_message(message.from_user.id, "Укажите цену (1% от суммы сделки в криптовалюте забирает сервис)")
-    await get_ad_data.next()
+    if check_crypto_balance(message.from_user.id)[0] == "BTC":
+        balance = get_balance(message.from_user.id)[0]
+    elif check_crypto_balance(message.from_user.id)[0] == "USDT":
+        balance = get_balance(message.from_user.id)[1]
+    elif check_crypto_balance(message.from_user.id)[0] == "XMR":
+        balance = get_balance(message.from_user.id)[2]
+    if float(balance) < float(message.text) and check_ad_type(message.from_user.id)[0] == "SELL":
+        await bot.send_message(message.from_user.id, "На вашем балансе не достаточно криптовалюты")
+        await get_ad_data.get_amount.set()
+    else:
+        await state.update_data(amount=message.text)
+        update_amount(message.from_user.id, message.text)
+        await bot.send_message(message.from_user.id, "Укажите цену (1% от суммы сделки в криптовалюте забирает сервис)")
+        await get_ad_data.next()
 
 
 @dp.message_handler(state=get_ad_data.get_price)
 async def p2p_get_price(message: types.Message, state: FSMContext):
-    await state.update_data(price=message.text)
-    data = await state.get_data()
-    await state.finish()
-    update_requisites(message.from_user.id, data["requisites"])
-    update_limits(message.from_user.id, data["limits"])
-    update_price(message.from_user.id, data["price"])
-    update_amount(message.from_user.id, data["amount"])
-    new_ad(message.from_user.id)
-    await bot.send_message(message.from_user.id, "Объявление создано!", reply_markup=mainboard)
+    global limit1
+    try:
+        limit1 = float(message.text.split("-")[1])
+    except:
+        await bot.send_message(message.from_user.id, "Лимиты указаны некоректно", reply_markup=mainboard)
+        await state.finish()
+    limit = float(check_amount(message.from_user.id)[0]) * float(check_price(message.from_user.id)[0])
+    if limit1 > limit and check_ad_type(message.from_user.id)[0] == "SELL":
+        await bot.send_message(message.from_user.id, "Выставленные лимиты превышают допустимое значение",
+                               reply_markup=mainboard)
+        await state.finish()
+    else:
+        await state.update_data(limits=message.text)
+        data = await state.get_data()
+        await state.finish()
+        update_requisites(message.from_user.id, data["requisites"])
+        update_limits(message.from_user.id, data["limits"])
+        update_price(message.from_user.id, data["price"])
+        update_amount(message.from_user.id, data["amount"])
+        new_ad(message.from_user.id)
+        await bot.send_message(message.from_user.id, "Объявление создано!", reply_markup=mainboard)
 
 
 # Конец блока создания объявлений
@@ -341,16 +376,18 @@ async def p2p_get_price(message: types.Message, state: FSMContext):
 # Блок взаимодействия пользователей
 @dp.callback_query_handler(text=['buy', 'sell'])
 async def start_p2p_extend(callback: types.CallbackQuery):
+    await callback.message.delete()
     if callback.data == 'buy':
-        set_order_ad_type(callback.from_user.id, "BUY")
+        set_order_ad_type(callback.from_user.id, "SELL")
         await bot.send_message(callback.from_user.id, "Выберете криптовалюту", reply_markup=create_order_board)
     elif callback.data == 'sell':
-        set_order_ad_type(callback.from_user.id, "SELL")
+        set_order_ad_type(callback.from_user.id, "BUY")
         await bot.send_message(callback.from_user.id, "Выберете криптовалюту", reply_markup=create_order_board)
 
 
 @dp.callback_query_handler(text=["btc_order", "usdt_order", "xmr_order"])
 async def set_p2p_crypro_and_fiat(callback: types.CallbackQuery):
+    await callback.message.delete()
     if callback.data == "btc_order":
         set_order_crypto(callback.from_user.id, "BTC")
         set_order_fiat(callback.from_user.id, check_fiat(callback.from_user.id)[0])
@@ -367,12 +404,14 @@ async def set_p2p_crypro_and_fiat(callback: types.CallbackQuery):
 
 @dp.callback_query_handler(text=["other_order", "crypto_order", "world_order", "online_wallet_order", "bank_order"])
 async def set_p2p_paytype(callback: types.CallbackQuery):
+    await callback.message.delete()
     await bot.send_message(callback.from_user.id, "Выбор метода оплаты",
                            reply_markup=choose_order_paymethod(check_fiat(callback.from_user.id)[0], callback.data))
 
 
 @dp.callback_query_handler(text=check_all_data_order())
 async def set_p2p_pay_method(callback: types.CallbackQuery):
+    await callback.message.delete()
     set_order_paymethod(callback.from_user.id, callback.data.split("_")[0])
     await bot.send_message(callback.from_user.id, "Выберите объявление",
                            reply_markup=show_ads_to_create_order_board(callback.from_user.id))
@@ -380,15 +419,24 @@ async def set_p2p_pay_method(callback: types.CallbackQuery):
 
 @dp.callback_query_handler(text=get_all_ads())
 async def choose_ad_and_extchange(callback: types.CallbackQuery):
+    await callback.message.delete()
     data = get_ad_data_order(callback.data)
     text = f"Объявление №{callback.data}\n\nЦена: {data[0]}\n\nКриптовалюта: {data[2]}\n\n Метод оплаты: {data[1]}\n\n Пользователь: user{data[3]}"
-    await bot.send_message(callback.from_user.id, text, reply_markup=start_exthenge_board)
-    start_order(callback.from_user.id, data[3], callback.data)
+    order = start_order(callback.from_user.id, data[3], callback.data)
+    print(order)
+    print(get_all_orders_ids())
+    await bot.send_message(callback.from_user.id, text, reply_markup=start_exthenge(order))
 
 
-@dp.callback_query_handler(text=['start'])
-async def extenge(callback: types.CallbackQuery):
-    pass
+@dp.callback_query_handler(text=get_all_orders_ids())
+async def extengers(callback: types.CallbackQuery):
+    await bot.send_message(callback.from_user.id, "ПРивепт")
+    '''print("work")
+    await callback.message.delete()
+    print(get_maker_and_taker(callback.data))
+    print(get_order_id(callback.from_user.id))
+    await bot.send_message(get_maker_and_taker(callback.data)[0],
+                           f"Новый заказ от {get_maker_and_taker(callback.data)[1]}")'''
 
 
 # Настройки
