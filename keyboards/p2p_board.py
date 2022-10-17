@@ -34,7 +34,7 @@ choose_p2p_crypto_board = InlineKeyboardMarkup().row(choose_btc).row(choose_usdt
 
 # Кнопка выбора способа оплаты
 bank_transfer = InlineKeyboardButton("Банковский перевод", callback_data="bank")
-online_wallet = InlineKeyboardButton("Электронные деньги", callback_data="online_wallet")
+online_wallet = InlineKeyboardButton("Электронные деньги", callback_data="onlinewallet")
 world_transfer = InlineKeyboardButton("Международные переводы", callback_data="world")
 crypto = InlineKeyboardButton("Другая Криптовалюта", callback_data="crypto")
 other = InlineKeyboardButton("Другое", callback_data="other")
@@ -42,13 +42,14 @@ other = InlineKeyboardButton("Другое", callback_data="other")
 choose_p2p_paytype = InlineKeyboardMarkup().row(bank_transfer, online_wallet).row(world_transfer, crypto).row(other)
 
 bank_transfer_order = InlineKeyboardButton("Банковский перевод", callback_data="bank_order")
-online_wallet_order = InlineKeyboardButton("Электронные деньги", callback_data="online_wallet_order")
+online_wallet_order = InlineKeyboardButton("Электронные деньги", callback_data="onlinewallet_order")
 world_transfer_order = InlineKeyboardButton("Международные переводы", callback_data="world_order")
 crypto_order = InlineKeyboardButton("Другая Криптовалюта", callback_data="crypto_order")
 other_order = InlineKeyboardButton("Другое", callback_data="other_order")
 
 choose_p2p_paytype_order = InlineKeyboardMarkup().row(bank_transfer_order, online_wallet_order).row(
     world_transfer_order, crypto_order).row(other_order)
+
 
 def start_exthenge(order_id):
     start_exthenge_button = InlineKeyboardButton("Начать обмен", callback_data=order_id)

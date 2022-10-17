@@ -198,7 +198,9 @@ def get_all_ads():
 def get_ad_data_order(ad_id):
     db = sqlite3.connect('database/adsdb.db')
     sql = db.cursor()
-    sql.execute("SELECT price, pay_method, crypto, user_id, limits, amount FROM ads WHERE ad_id = (?)", (ad_id,))
-    data = sql.fetchone()
+    sql.execute("SELECT price, pay_method, crypto, user_id, limits, amount FROM ads WHERE ad_id = (?)", (ad_id, ))
+    data = sql.fetchall()
     db.close()
-    return data
+    return data[0]
+
+

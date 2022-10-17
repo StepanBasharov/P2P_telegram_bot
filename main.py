@@ -6,6 +6,7 @@ from aiogram.dispatcher import Dispatcher
 from aiogram.utils import executor
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
+from aiogram.utils.callback_data import CallbackData
 
 from adminpanel.admins import admins
 
@@ -417,26 +418,20 @@ async def set_p2p_pay_method(callback: types.CallbackQuery):
                            reply_markup=show_ads_to_create_order_board(callback.from_user.id))
 
 
-@dp.callback_query_handler(text=get_all_ads())
-async def choose_ad_and_extchange(callback: types.CallbackQuery):
+@dp.callback_query_handler(lambda c: get_all_ads())
+async def choose_ad_and_exchange(callback: types.CallbackQuery):
     await callback.message.delete()
     data = get_ad_data_order(callback.data)
     text = f"Объявление №{callback.data}\n\nЦена: {data[0]}\n\nКриптовалюта: {data[2]}\n\n Метод оплаты: {data[1]}\n\n Пользователь: user{data[3]}"
     order = start_order(callback.from_user.id, data[3], callback.data)
-    print(order)
-    print(get_all_orders_ids())
     await bot.send_message(callback.from_user.id, text, reply_markup=start_exthenge(order))
+    if order in get_all_ads():
+        print("Походу все, приехали")
 
-
-@dp.callback_query_handler(text=get_all_orders_ids())
-async def extengers(callback: types.CallbackQuery):
-    await bot.send_message(callback.from_user.id, "ПРивепт")
-    '''print("work")
-    await callback.message.delete()
-    print(get_maker_and_taker(callback.data))
-    print(get_order_id(callback.from_user.id))
+@dp.callback_query_handler(lambda c: get_all_orders_ids())
+async def new_order_start(callback: types.CallbackQuery):
     await bot.send_message(get_maker_and_taker(callback.data)[0],
-                           f"Новый заказ от {get_maker_and_taker(callback.data)[1]}")'''
+                           f"Новый заказ от {get_maker_and_taker(callback.data)[1]}")
 
 
 # Настройки

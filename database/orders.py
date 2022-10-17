@@ -56,9 +56,9 @@ def get_all_orders_ids():
     sql = db.cursor()
     sql.execute("SELECT order_id FROM orders_now")
     data = sql.fetchall()
-    data = [i[0] for i in data]
+    orders_data = [i[0] for i in data]
     db.close()
-    return data
+    return orders_data
 
 
 def set_order_fiat(user_id, fiat):
