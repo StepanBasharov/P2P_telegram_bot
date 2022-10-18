@@ -193,8 +193,9 @@ def new_ad_sell(user_id, crypto, fiat, pay_method, requisites, limits, amount, p
     sql = db.cursor()
     sql.execute(f"SELECT ad_id FROM ads WHERE ad_id = (?)", (generate_id,))
     if sql.fetchone() is None:
-        sql.execute("INSERT INTO ads VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    (generate_id, user_id, crypto, fiat, pay_method, requisites, limits, amount, "SELL", price))
+        sql.execute("INSERT INTO ads VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (generate_id, user_id, crypto, fiat, pay_method, requisites, limits, amount, "SELL", price, 1,
+                     f"Объявление {generate_id}"))
         db.commit()
         db.close()
         return True
@@ -209,14 +210,24 @@ def new_ad_buy(user_id, crypto, fiat, pay_method, requisites, limits, amount, pr
     sql = db.cursor()
     sql.execute(f"SELECT ad_id FROM ads WHERE ad_id = (?)", (generate_id,))
     if sql.fetchone() is None:
-        sql.execute("INSERT INTO ads VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    (generate_id, user_id, crypto, fiat, pay_method, requisites, limits, amount, "BUY", price))
+        sql.execute("INSERT INTO ads VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (generate_id, user_id, crypto, fiat, pay_method, requisites, limits, amount, "BUY", price, 1,
+                     f"Объявление {generate_id}"))
         db.commit()
         db.close()
         return True
     else:
         db.close()
         return False
+
+
+def get_ad_status(ad_id):
+    db = sqlite3.connect('database/adsdb.db')
+    sql = db.cursor()
+    sql.execute("SELECT active FROM ads WHERE ad_id = (?)", (ad_id,))
+    data = sql.fetchone()[0]
+    db.close()
+    return data
 
 
 def show_ads(user_id):
@@ -252,7 +263,8 @@ def get_all_ads():
 def get_ad_data_order(ad_id):
     db = sqlite3.connect('database/adsdb.db')
     sql = db.cursor()
-    sql.execute("SELECT price, pay_method, crypto, user_id, limits, amount FROM ads WHERE ad_id = (?)", (ad_id,))
-    data = sql.fetchall()
+    sql.execute("SELECT price, pay_method, crypto, user_id, limits, amount, description FROM ads WHERE ad_id = (?)",
+                (ad_id,))
+    data = sql.fetchone()
     db.close()
-    return data[0]
+    return data

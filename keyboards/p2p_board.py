@@ -2,6 +2,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from keyboards.pay_methods import choose_pay_method_from_json
 from database.addb import show_ads
 from database.orders import send_data_to_order
+from database.addb import get_ad_status
 
 buy_button = InlineKeyboardButton("🟢 Купить", callback_data='buy')
 sell_button = InlineKeyboardButton("🟥 Продать", callback_data='sell')
@@ -135,3 +136,18 @@ def confirm_requisites_buttons(order_id, requisit, amount):
     confirm_requisites_board.row(InlineKeyboardButton("✅", callback_data=f"req_done_{requisit}_{amount}_{order_id}"),
                                  InlineKeyboardButton("❌", callback_data=f"req_fail_{order_id}"))
     return confirm_requisites_board
+
+
+def my_ad_settings(ad_id):
+    settings_ad_board = InlineKeyboardMarkup()
+    new_limit = InlineKeyboardButton("📐 Лимиты", callback_data=f"new_limit_{ad_id}")
+    new_price = InlineKeyboardButton("💵 Цена", callback_data=f"new_price_{ad_id}")
+    new_description = InlineKeyboardButton("📋 Условия", callback_data=f"new_description_{ad_id}")
+    new_requisites = InlineKeyboardButton("💸 Реквизиты", callback_data=f"new_requisites_{ad_id}")
+    if str(get_ad_status(ad_id)) == "1":
+        status_button = InlineKeyboardButton("🟢 Выключить", callback_data=f"off_{ad_id}")
+    else:
+        status_button = InlineKeyboardButton("🟥 Включить", callback_data=f"on_{ad_id}")
+    delete_ad = InlineKeyboardButton("🗑 Удалить", callback_data=f"delete_{ad_id}")
+    settings_ad_board.row(new_limit, new_price).row(new_description, new_requisites).row(status_button, delete_ad)
+    return settings_ad_board
