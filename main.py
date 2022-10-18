@@ -423,11 +423,15 @@ async def set_p2p_pay_method(callback: types.CallbackQuery):
 @dp.callback_query_handler(Text(startswith="ad_"))
 async def choose_ad_and_exchange(callback: types.CallbackQuery):
     await callback.message.delete()
-    data = get_ad_data_order(callback.data)
-    text = f"Объявление ID: {callback.data}\n\nЦена: {data[0]}\n\nКриптовалюта: {data[2]}\n\n Метод оплаты: {data[1]}\n\n Пользователь: user{data[3]}"
-    order = start_order(callback.from_user.id, data[3], callback.data)
-    await bot.send_message(callback.from_user.id, text, reply_markup=start_exthenge(order))
-    await Order.get_order_id.set()
+    ad_owner = check_user_id(callback.data)
+    if str(callback.from_user.id) == str(ad_owner):
+        await bot.send_message(callback.from_user.id, "Это ваше объявление")
+    else:
+        data = get_ad_data_order(callback.data)
+        text = f"Объявление ID: {callback.data}\n\nЦена: {data[0]}\n\nКриптовалюта: {data[2]}\n\n Метод оплаты: {data[1]}\n\n Пользователь: user{data[3]}"
+        order = start_order(callback.from_user.id, data[3], callback.data)
+        await bot.send_message(callback.from_user.id, text, reply_markup=start_exthenge(order))
+        await Order.get_order_id.set()
 
 
 @dp.callback_query_handler(Text(startswith="order_"), state=Order.get_order_id)

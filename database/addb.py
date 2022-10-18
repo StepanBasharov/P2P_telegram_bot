@@ -36,6 +36,15 @@ def check_price(user_id):
     return data
 
 
+def check_user_id(ad_id):
+    db = sqlite3.connect('database/adsdb.db')
+    sql = db.cursor()
+    sql.execute("SELECT user_id FROM ads WHERE ad_id = (?)", (ad_id,))
+    data = sql.fetchone()[0]
+    db.close()
+    return data
+
+
 def check_price_to_order(ad_id):
     db = sqlite3.connect('database/adsdb.db')
     sql = db.cursor()
