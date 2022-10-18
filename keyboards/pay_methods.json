@@ -6,7 +6,7 @@
       "Alex Bank",
       "Ahlibank"
     ],
-    "onlinewallet": [
+    "online_wallet": [
       "Web Money",
       "Perfect Money",
       "Pay Pal",
@@ -29,7 +29,7 @@
       "Riyad Bank",
       "Arab Bank"
     ],
-    "onlinewallet": [
+    "online_wallet": [
       "Web Money",
       "Perfect Money",
       "Pay Pal",
@@ -51,7 +51,7 @@
       "Abu Dhabi Islamic Bank",
       "Mashreq"
     ],
-    "onlinewallet": [
+    "online_wallet": [
       "Web Money",
       "Perfect Money",
       "Pay Pal",
@@ -73,7 +73,7 @@
       "VakifBank",
       "AkBank"
     ],
-    "onlinewallet": [
+    "online_wallet": [
       "Web Money",
       "Perfect Money",
       "Pay Pal",
@@ -95,7 +95,7 @@
       "Alpha Bank",
       "RosBank"
     ],
-    "onlinewallet": [
+    "online_wallet": [
       "Web Money",
       "Perfect Money",
       "Pay Pal",
@@ -113,7 +113,7 @@
   },
   "IRR": {
     "bank": [],
-    "onlinewallet": [
+    "online_wallet": [
       "Web Money",
       "Perfect Money",
       "Pay Pal",
@@ -130,7 +130,7 @@
   },
   "BRL": {
     "bank": [],
-    "onlinewallet": [
+    "online_wallet": [
       "Web Money",
       "Perfect Money",
       "Pay Pal",
@@ -147,7 +147,7 @@
   },
   "VND": {
     "bank": [],
-    "onlinewallet": [
+    "online_wallet": [
       "Web Money",
       "Perfect Money",
       "Pay Pal",
@@ -164,7 +164,7 @@
   },
   "CNY": {
     "bank": [],
-    "onlinewallet": [
+    "online_wallet": [
       "Web Money",
       "Perfect Money",
       "Pay Pal",
@@ -181,7 +181,7 @@
   },
   "UAH": {
     "bank": [],
-    "onlinewallet": [
+    "online_wallet": [
       "Web Money",
       "Perfect Money",
       "Pay Pal",
@@ -198,7 +198,7 @@
   },
   "KZT": {
     "bank": [],
-    "onlinewallet": [
+    "online_wallet": [
       "Web Money",
       "Perfect Money",
       "Pay Pal",
@@ -215,7 +215,7 @@
   },
   "USD": {
     "bank": [],
-    "onlinewallet": [
+    "online_wallet": [
       "Web Money",
       "Perfect Money",
       "Pay Pal",

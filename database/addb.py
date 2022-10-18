@@ -36,11 +36,56 @@ def check_price(user_id):
     return data
 
 
+def check_price_to_order(ad_id):
+    db = sqlite3.connect('database/adsdb.db')
+    sql = db.cursor()
+    sql.execute("SELECT price FROM ads WHERE ad_id = (?)", (ad_id,))
+    data = sql.fetchone()[0]
+    db.close()
+    return data
+
+
 def check_amount(user_id):
     db = sqlite3.connect('database/adsdb.db')
     sql = db.cursor()
     sql.execute("SELECT amount FROM ad_creation WHERE user_id = (?)", (user_id,))
     data = sql.fetchone()
+    db.close()
+    return data
+
+
+def check_limits_order(ad_id):
+    db = sqlite3.connect('database/adsdb.db')
+    sql = db.cursor()
+    sql.execute("SELECT limits FROM ads WHERE ad_id = (?)", (ad_id,))
+    data = sql.fetchone()[0]
+    db.close()
+    return data
+
+
+def check_ad_type_order(ad_id):
+    db = sqlite3.connect('database/adsdb.db')
+    sql = db.cursor()
+    sql.execute("SELECT ad_type FROM ads WHERE ad_id = (?)", (ad_id,))
+    data = sql.fetchone()[0]
+    db.close()
+    return data
+
+
+def check_requsites_order(ad_id):
+    db = sqlite3.connect('database/adsdb.db')
+    sql = db.cursor()
+    sql.execute("SELECT requisites FROM ads WHERE ad_id = (?)", (ad_id,))
+    data = sql.fetchone()[0]
+    db.close()
+    return data
+
+
+def check_crypto_order(ad_id):
+    db = sqlite3.connect('database/adsdb.db')
+    sql = db.cursor()
+    sql.execute("SELECT crypto FROM ads WHERE ad_id = (?)", (ad_id,))
+    data = sql.fetchone()[0]
     db.close()
     return data
 
@@ -134,7 +179,7 @@ def new_ad(user_id):
 
 
 def new_ad_sell(user_id, crypto, fiat, pay_method, requisites, limits, amount, price):
-    generate_id = str(randint(1, 999999999999))
+    generate_id = f"ad_{str(randint(1, 999999999999))}"
     db = sqlite3.connect('database/adsdb.db')
     sql = db.cursor()
     sql.execute(f"SELECT ad_id FROM ads WHERE ad_id = (?)", (generate_id,))
@@ -150,7 +195,7 @@ def new_ad_sell(user_id, crypto, fiat, pay_method, requisites, limits, amount, p
 
 
 def new_ad_buy(user_id, crypto, fiat, pay_method, requisites, limits, amount, price):
-    generate_id = str(randint(1, 999999999999))
+    generate_id = f"ad_{str(randint(1, 999999999999))}"
     db = sqlite3.connect('database/adsdb.db')
     sql = db.cursor()
     sql.execute(f"SELECT ad_id FROM ads WHERE ad_id = (?)", (generate_id,))
@@ -198,9 +243,7 @@ def get_all_ads():
 def get_ad_data_order(ad_id):
     db = sqlite3.connect('database/adsdb.db')
     sql = db.cursor()
-    sql.execute("SELECT price, pay_method, crypto, user_id, limits, amount FROM ads WHERE ad_id = (?)", (ad_id, ))
+    sql.execute("SELECT price, pay_method, crypto, user_id, limits, amount FROM ads WHERE ad_id = (?)", (ad_id,))
     data = sql.fetchall()
     db.close()
     return data[0]
-
-

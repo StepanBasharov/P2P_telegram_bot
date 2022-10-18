@@ -1,7 +1,7 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from keyboards.pay_methods import choose_pay_method_from_json
 from database.addb import show_ads
-from database.orders import send_data_to_order, get_order_id
+from database.orders import send_data_to_order
 
 buy_button = InlineKeyboardButton("🟢 Купить", callback_data='buy')
 sell_button = InlineKeyboardButton("🟥 Продать", callback_data='sell')
@@ -34,7 +34,7 @@ choose_p2p_crypto_board = InlineKeyboardMarkup().row(choose_btc).row(choose_usdt
 
 # Кнопка выбора способа оплаты
 bank_transfer = InlineKeyboardButton("Банковский перевод", callback_data="bank")
-online_wallet = InlineKeyboardButton("Электронные деньги", callback_data="onlinewallet")
+online_wallet = InlineKeyboardButton("Электронные деньги", callback_data="online_wallet")
 world_transfer = InlineKeyboardButton("Международные переводы", callback_data="world")
 crypto = InlineKeyboardButton("Другая Криптовалюта", callback_data="crypto")
 other = InlineKeyboardButton("Другое", callback_data="other")
@@ -42,7 +42,7 @@ other = InlineKeyboardButton("Другое", callback_data="other")
 choose_p2p_paytype = InlineKeyboardMarkup().row(bank_transfer, online_wallet).row(world_transfer, crypto).row(other)
 
 bank_transfer_order = InlineKeyboardButton("Банковский перевод", callback_data="bank_order")
-online_wallet_order = InlineKeyboardButton("Электронные деньги", callback_data="onlinewallet_order")
+online_wallet_order = InlineKeyboardButton("Электронные деньги", callback_data="online_wallet_order")
 world_transfer_order = InlineKeyboardButton("Международные переводы", callback_data="world_order")
 crypto_order = InlineKeyboardButton("Другая Криптовалюта", callback_data="crypto_order")
 other_order = InlineKeyboardButton("Другое", callback_data="other_order")
@@ -68,7 +68,10 @@ def choose_p2p_paymethod(fiat, method):
 
 def choose_order_paymethod(fiat, method):
     pay_methods_board = InlineKeyboardMarkup()
-    method = method.split("_")[0]
+    if method == "online_wallet_order":
+        method = method.split("_")[0] + "_wallet"
+    else:
+        method = method.split("_")[0]
     data = choose_pay_method_from_json(fiat, method)
     for i in data:
         pay_methods_board.row(InlineKeyboardButton(i, callback_data=f"{i}_order"))
@@ -101,3 +104,34 @@ def show_ads_to_create_order_board(user_id):
                 button_text = f"🟥 {i[3]}, {i[1]}, ({i[5]}), {i[2]}"
             ads_to_order_board.row(InlineKeyboardButton(button_text, callback_data=i[0]))
     return ads_to_order_board
+
+
+def is_paid(order_id):
+    is_paid_board = InlineKeyboardMarkup()
+    is_paid_board.row(InlineKeyboardButton("Оплачено", callback_data=f"is_paid_taker_{order_id}"))
+    return is_paid_board
+
+
+def is_paid_maker(order_id):
+    is_paid_board = InlineKeyboardMarkup()
+    is_paid_board.row(InlineKeyboardButton("Оплачено", callback_data=f"is_paid_maker_{order_id}"))
+    return is_paid_board
+
+
+def confirm_paid_from_maker(order_id):
+    confirm_paid_board = InlineKeyboardMarkup()
+    confirm_paid_board.row(InlineKeyboardButton("Оплата получена", callback_data=f"paid_confirm_{order_id}"))
+    return confirm_paid_board
+
+
+def confirm_paid_from_taker(order_id):
+    confirm_paid_board = InlineKeyboardMarkup()
+    confirm_paid_board.row(InlineKeyboardButton("Оплата получена", callback_data=f"paid_confirm_taker_{order_id}"))
+    return confirm_paid_board
+
+
+def confirm_requisites_buttons(order_id, requisit, amount):
+    confirm_requisites_board = InlineKeyboardMarkup()
+    confirm_requisites_board.row(InlineKeyboardButton("✅", callback_data=f"req_done_{requisit}_{amount}_{order_id}"),
+                                 InlineKeyboardButton("❌", callback_data=f"req_fail_{order_id}"))
+    return confirm_requisites_board

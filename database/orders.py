@@ -17,14 +17,13 @@ def search_order(user_id):
         return "Already"
 
 
-
 def start_order(taker, maker, ad_id):
     db = sqlite3.connect('database/order_search.db')
     sql = db.cursor()
-    generate_id = str(randint(1, 999999999999))
+    generate_id = f"order_{str(randint(1, 999999999999))}"
     sql.execute(f"SELECT order_id FROM orders_now WHERE order_id = (?)", (generate_id,))
     if sql.fetchone() is None:
-        sql.execute("INSERT INTO orders_now VALUES (?, ?, ?, ?, ?, ?, ?)", (taker, maker, ad_id, 0, 0, 0, generate_id))
+        sql.execute("INSERT INTO orders_now VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (taker, maker, ad_id, 0, 0, 0, generate_id, "0"))
         db.commit()
         db.close()
         return generate_id
@@ -37,6 +36,14 @@ def get_order_id(taker):
     db = sqlite3.connect('database/order_search.db')
     sql = db.cursor()
     sql.execute("SELECT order_id FROM orders_now WHERE taker = (?)", (taker,))
+    data = sql.fetchone()[0]
+    db.close()
+    return data
+
+def get_order_amount(order_id):
+    db = sqlite3.connect('database/order_search.db')
+    sql = db.cursor()
+    sql.execute("SELECT amount FROM orders_now WHERE order_id = (?)", (order_id,))
     data = sql.fetchone()[0]
     db.close()
     return data
@@ -85,6 +92,14 @@ def set_order_paymethod(user_id, pay_method):
     db.close()
 
 
+def set_order_amount(order_id, amount):
+    db = sqlite3.connect('database/order_search.db')
+    sql = db.cursor()
+    sql.execute(f"UPDATE orders_now SET amount = (?) WHERE order_id = (?)", (amount, order_id))
+    db.commit()
+    db.close()
+
+
 def set_order_ad_type(user_id, ad_type):
     db = sqlite3.connect('database/order_search.db')
     sql = db.cursor()
@@ -99,5 +114,14 @@ def send_data_to_order(user_id):
     sql.execute("SELECT crypto, fiat, pay_method, ad_type FROM orders WHERE user_id = (?)", (user_id,))
     data = sql.fetchone()
     data = show_ads_to_order(data[1], data[0], data[2], data[3])
+    db.close()
+    return data
+
+
+def get_ad_id(order_id):
+    db = sqlite3.connect('database/order_search.db')
+    sql = db.cursor()
+    sql.execute("SELECT ad_id FROM orders_now WHERE order_id = (?)", (order_id,))
+    data = sql.fetchone()[0]
     db.close()
     return data

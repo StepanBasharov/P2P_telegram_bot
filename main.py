@@ -6,7 +6,7 @@ from aiogram.dispatcher import Dispatcher
 from aiogram.utils import executor
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
-from aiogram.utils.callback_data import CallbackData
+from aiogram.dispatcher.filters import Text
 
 from adminpanel.admins import admins
 
@@ -20,7 +20,8 @@ from keyboards.p2p_board import show_ads_board, buy_or_sell_board, choose_p2p_cr
     choose_p2p_paymethod, choose_order_paymethod
 from keyboards.pay_methods import check_all_data, check_all_data_order
 from keyboards.p2p_board import create_order_board, choose_p2p_paytype_order, show_ads_to_create_order_board
-from keyboards.p2p_board import start_exthenge
+from keyboards.p2p_board import start_exthenge, is_paid, confirm_paid_from_maker, confirm_requisites_buttons, \
+    is_paid_maker, confirm_paid_from_taker
 
 from database.balancedb import wallet, get_balance, add_btc, add_usdt, add_xmr
 from database.check_hash import checker_hash
@@ -31,6 +32,7 @@ from database.orders import *
 from states.hash_state import Check_hash_btc, Check_hash_usdt, Check_hash_xmr
 from states.output_crypto import output_btc, output_xmr, output_usdt
 from states.ad_state import get_ad_data
+from states.order_state import Order
 
 from utils.btcscan import btc_hash_scaner
 from utils.tronscan import tron_hash_scaner
@@ -418,20 +420,147 @@ async def set_p2p_pay_method(callback: types.CallbackQuery):
                            reply_markup=show_ads_to_create_order_board(callback.from_user.id))
 
 
-@dp.callback_query_handler(lambda c: get_all_ads())
+@dp.callback_query_handler(Text(startswith="ad_"))
 async def choose_ad_and_exchange(callback: types.CallbackQuery):
     await callback.message.delete()
     data = get_ad_data_order(callback.data)
-    text = f"Объявление №{callback.data}\n\nЦена: {data[0]}\n\nКриптовалюта: {data[2]}\n\n Метод оплаты: {data[1]}\n\n Пользователь: user{data[3]}"
+    text = f"Объявление ID: {callback.data}\n\nЦена: {data[0]}\n\nКриптовалюта: {data[2]}\n\n Метод оплаты: {data[1]}\n\n Пользователь: user{data[3]}"
     order = start_order(callback.from_user.id, data[3], callback.data)
     await bot.send_message(callback.from_user.id, text, reply_markup=start_exthenge(order))
-    if order in get_all_ads():
-        print("Походу все, приехали")
+    await Order.get_order_id.set()
 
-@dp.callback_query_handler(lambda c: get_all_orders_ids())
-async def new_order_start(callback: types.CallbackQuery):
-    await bot.send_message(get_maker_and_taker(callback.data)[0],
-                           f"Новый заказ от {get_maker_and_taker(callback.data)[1]}")
+
+@dp.callback_query_handler(Text(startswith="order_"), state=Order.get_order_id)
+async def new_order_start(callback: types.CallbackQuery, state: FSMContext):
+    get_ad = get_ad_id(callback.data)
+    get_limits = check_limits_order(get_ad)
+    await bot.send_message(callback.from_user.id, f"Укажите сумму покупки\nЛимиты: {get_limits}")
+    await state.update_data(order_id=callback.data)
+    await state.update_data(main_limit=get_limits)
+    await Order.next()
+
+
+@dp.message_handler(state=Order.get_amount)
+async def get_order_user_limits(message: types.Message, state: FSMContext):
+    await state.update_data(user_amount=message.text)
+    data = await state.get_data()
+    if float(data["user_amount"]) < float(data["main_limit"].split("-")[0]) or float(data["user_amount"]) > float(
+            data["main_limit"].split("-")[1]):
+        await bot.send_message(message.from_user.id, "Выход за пределы лимитов\n\nУкажите лимиты заново")
+        await Order.get_amount.set()
+    else:
+        get_ad = get_ad_id(data["order_id"])
+        get_ad_type = check_ad_type_order(get_ad)
+        if get_ad_type == "BUY":
+            crypto = check_crypto_order(get_ad)
+            price = check_price_to_order(get_ad)
+            if crypto == "BTC":
+                is_balance = get_balance(message.from_user.id)[0]
+            elif crypto == "USDT":
+                is_balance = get_balance(message.from_user.id)[1]
+            elif crypto == "XMR":
+                is_balance = get_balance(message.from_user.id)[2]
+            if float(is_balance) * float(price) < float(data["user_amount"]):
+                await bot.send_message(message.from_user.id,
+                                       f"Внимание!\nНедостаточно средств\nДоступно: {round(float(is_balance) * float(price), 1)}")
+            else:
+                set_order_amount(data["order_id"], data['user_amount'])
+                await bot.send_message(message.from_user.id, "Отправьте реквизиты для получения оплаты")
+                await Order.get_requisites.set()
+            # await bot.send_message(message.from_user.id, "Пожалуйста, введите реквизиты")
+            # await Order.get_requisites.set()
+        else:
+            get_requisites = check_requsites_order(get_ad)
+            maker = get_maker_and_taker(data["order_id"])[0]
+            set_order_amount(data["order_id"], data['user_amount'])
+            await bot.send_message(message.from_user.id, f"Отправьте {data['user_amount']} на {get_requisites}",
+                                   reply_markup=is_paid(data['order_id']))
+            await bot.send_message(maker,
+                                   f"Ожидайте получения оплаты от {message.from_user.id}\nСумма: {data['user_amount']}")
+            await state.finish()
+
+
+@dp.message_handler(state=Order.get_requisites)
+async def get_order_requisites(message: types.Message, state: FSMContext):
+    await state.update_data(taker_requisites=message.text)
+    data = await state.get_data()
+    await bot.send_message(message.from_user.id, f"Верно ли указаны реквизиты: {data['taker_requisites']}",
+                           reply_markup=confirm_requisites_buttons(data["order_id"], data["taker_requisites"],
+                                                                   data["user_amount"]))
+    await state.finish()
+
+
+@dp.callback_query_handler(Text(startswith="req_done_"))
+async def confirm_requisites(callback: types.CallbackQuery):
+    requisit = callback.data.split("req_done_")[1].split("_")[0]
+    maker = get_maker_and_taker(
+        callback.data.split("req_done_")[1].split("_")[2] + "_" + callback.data.split("req_done_")[1].split("_")[3])[0]
+    amount = callback.data.split("req_done_")[1].split("_")[1]
+    await bot.send_message(maker, f"Новый заказ от user{callback.from_user.id}\n\n Отправьте {amount} на {requisit}",
+                           reply_markup=is_paid_maker(callback.data.split("req_done_")[1].split("_")[2] + "_" +
+                                                      callback.data.split("req_done_")[1].split("_")[3]))
+    await bot.send_message(callback.from_user.id, f"Ожидайте оплату")
+
+
+@dp.callback_query_handler(Text(startswith="is_paid_maker_"))
+async def confirm_paid_taker(callback: types.CallbackQuery):
+    taker = get_maker_and_taker(callback.data.split("is_paid_maker_")[1])[1]
+    await bot.send_message(taker, f"Заказ отмечен как оплаченый", reply_markup=confirm_paid_from_taker(callback.data.split("is_paid_maker_")[1]))
+
+@dp.callback_query_handler(Text(startswith="paid_confirm_taker_"))
+async def withdraw_to_taker(callback: types.CallbackQuery):
+    maker = get_maker_and_taker(callback.data.split("paid_confirm_taker_")[1])[0]
+    taker = get_maker_and_taker(callback.data.split("paid_confirm_taker_")[1])[1]
+    amount = get_order_amount(callback.data.split("paid_confirm_taker_")[1])
+    get_ad = get_ad_id(callback.data.split("paid_confirm_taker_")[1])
+    crypto = check_crypto_order(get_ad)
+    price = check_price_to_order(get_ad)
+    to_withdraw = float(amount) / float(price)
+    if crypto == "BTC":
+        add_btc(maker, to_withdraw)
+        add_btc(taker, -to_withdraw)
+    elif crypto == "USDT":
+        add_usdt(maker, to_withdraw)
+        add_usdt(taker, -to_withdraw)
+    elif crypto == "XMR":
+        add_xmr(maker, to_withdraw)
+        add_xmr(taker, -to_withdraw)
+    await bot.send_message(taker, f"С вашего {crypto} кошелька выведено {to_withdraw} {crypto}")
+    await bot.send_message(maker, f"На ваш {crypto} кошелек поступило {to_withdraw} {crypto}")
+
+@dp.callback_query_handler(Text(startswith="req_fail_"))
+async def unconfirm_requisites(callback: types.CallbackQuery):
+    await bot.send_message(callback.from_user.id, "Создание оредра остановлено")
+
+
+@dp.callback_query_handler(Text(startswith="is_paid_taker_"))
+async def confirm_paid_maker(callback: types.CallbackQuery):
+    maker = get_maker_and_taker(callback.data.split("is_paid_taker_")[1])[0]
+    await bot.send_message(maker, f"Заказ от {callback.from_user.id} отмечен как оплаченый",
+                           reply_markup=confirm_paid_from_maker(callback.data.split("is_paid_taker_")[1]))
+    await bot.send_message(callback.from_user.id, "Ожидайте зачисления средств на ваш счет")
+
+
+@dp.callback_query_handler(Text(startswith="paid_confirm_"))
+async def withdraw_to_taker(callback: types.CallbackQuery):
+    maker = get_maker_and_taker(callback.data.split("paid_confirm_")[1])[0]
+    taker = get_maker_and_taker(callback.data.split("paid_confirm_")[1])[1]
+    amount = get_order_amount(callback.data.split("paid_confirm_")[1])
+    get_ad = get_ad_id(callback.data.split("paid_confirm_")[1])
+    crypto = check_crypto_order(get_ad)
+    price = check_price_to_order(get_ad)
+    to_withdraw = float(amount) / float(price)
+    if crypto == "BTC":
+        add_btc(maker, -to_withdraw)
+        add_btc(taker, to_withdraw)
+    elif crypto == "USDT":
+        add_usdt(maker, -to_withdraw)
+        add_usdt(taker, to_withdraw)
+    elif crypto == "XMR":
+        add_xmr(maker, -to_withdraw)
+        add_xmr(taker, to_withdraw)
+    await bot.send_message(maker, f"С вашего {crypto} кошелька выведено {to_withdraw} {crypto}")
+    await bot.send_message(taker, f"На ваш {crypto} кошелек поступило {to_withdraw} {crypto}")
 
 
 # Настройки
