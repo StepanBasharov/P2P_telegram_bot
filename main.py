@@ -31,7 +31,7 @@ from database.orders import *
 
 from states.hash_state import Check_hash_btc, Check_hash_usdt, Check_hash_xmr
 from states.output_crypto import output_btc, output_xmr, output_usdt
-from states.ad_state import get_ad_data
+from states.ad_state import get_ad_data, get_ad_data_repleace
 from states.order_state import Order
 
 from utils.btcscan import btc_hash_scaner
@@ -427,17 +427,13 @@ async def choose_ad_and_exchange(callback: types.CallbackQuery):
     if str(callback.from_user.id) == str(ad_owner):
         await bot.send_message(callback.from_user.id, "Редактировать объявление",
                                reply_markup=my_ad_settings(callback.data))
+        await get_ad_data_repleace.get_ad_id.set()
     else:
         data = get_ad_data_order(callback.data)
         text = f"Объявление ID: {callback.data}\n\nОписание: {data[6]}\n\nЦена: {data[0]}\n\nКриптовалюта: {data[2]}\n\n Метод оплаты: {data[1]}\n\n Пользователь: user{data[3]}"
         order = start_order(callback.from_user.id, data[3], callback.data)
         await bot.send_message(callback.from_user.id, text, reply_markup=start_exthenge(order))
         await Order.get_order_id.set()
-
-
-@dp.callback_query_handler(Text(startswith="new_limit_"))
-async def new_limit(callback: types.CallbackQuery):
-    pass
 
 
 @dp.callback_query_handler(Text(startswith="order_"), state=Order.get_order_id)
@@ -573,6 +569,18 @@ async def withdraw_to_taker(callback: types.CallbackQuery):
     await bot.send_message(maker, f"С вашего {crypto} кошелька выведено {to_withdraw} {crypto}")
     await bot.send_message(taker, f"На ваш {crypto} кошелек поступило {to_withdraw} {crypto}")
 
+
+# Настройки объявления
+@dp.callback_query_handler(Text(startswith="new_limit_"), state=get_ad_data_repleace.get_ad_id)
+async def new_limit(callback: types.CallbackQuery, state: FSMContext):
+    ad_id = callback.data.split("new_limit_")[1]
+    await state.update_data(ad_id=ad_id)
+    await bot.send_message(callback.from_user.id, "Введите новые лимиты")
+    await get_ad_data_repleace.get_new_limits.set()
+
+@dp.message_handler(state=get_ad_data_repleace.get_new_limits)
+async def new_limits_ad(message: types.Message, state: FSMContext):
+    pass
 
 # Настройки
 @dp.callback_query_handler(text=['lang', 'fiat'])
