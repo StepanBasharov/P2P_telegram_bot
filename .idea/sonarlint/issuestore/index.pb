@@ -21,3 +21,7 @@ H
 keyboards/pay_methods.py,6/8/68b9fd29ea6bdd04ea0aff6e530c9610f36439b4
 E
 database/balancedb.py,e/8/e8146dba125685688c9ab691ec8014a16f025121
+B
+states/ad_state.py,8/2/82a235afb7429388dd40880a60188e96af8d3cf3
+J
+keyboards/pay_methods.json,f/9/f9c0faf3275d528030c2d4236c049f3065e12a67
