@@ -63,6 +63,15 @@ def check_amount(user_id):
     return data
 
 
+def check_amount_order(ad_id):
+    db = sqlite3.connect('database/adsdb.db')
+    sql = db.cursor()
+    sql.execute("SELECT amount FROM ads WHERE ad_id = (?)", (ad_id,))
+    data = sql.fetchone()[0]
+    db.close()
+    return data
+
+
 def check_limits_order(ad_id):
     db = sqlite3.connect('database/adsdb.db')
     sql = db.cursor()
@@ -149,6 +158,14 @@ def update_requisites(user_id, requisites):
     db.close()
 
 
+def update_requisites_new(ad_id, requisites):
+    db = sqlite3.connect('database/adsdb.db')
+    sql = db.cursor()
+    sql.execute("UPDATE ads SET requisites = (?) WHERE ad_id = (?)", (requisites, ad_id))
+    db.commit()
+    db.close()
+
+
 def update_limits(user_id, limits):
     db = sqlite3.connect('database/adsdb.db')
     sql = db.cursor()
@@ -169,6 +186,54 @@ def update_price(user_id, price):
     db = sqlite3.connect('database/adsdb.db')
     sql = db.cursor()
     sql.execute("UPDATE ad_creation SET price = (?) WHERE user_id = (?)", (price, user_id))
+    db.commit()
+    db.close()
+
+
+def update_price_new(ad_id, price):
+    db = sqlite3.connect('database/adsdb.db')
+    sql = db.cursor()
+    sql.execute("UPDATE ads SET price = (?) WHERE ad_id = (?)", (price, ad_id))
+    db.commit()
+    db.close()
+
+
+def update_limits_new(ad_id, limits):
+    db = sqlite3.connect('database/adsdb.db')
+    sql = db.cursor()
+    sql.execute("UPDATE ads SET limits = (?) WHERE ad_id = (?)", (limits, ad_id))
+    db.commit()
+    db.close()
+
+
+def update_description_new(ad_id, description):
+    db = sqlite3.connect('database/adsdb.db')
+    sql = db.cursor()
+    sql.execute("UPDATE ads SET description = (?) WHERE ad_id = (?)", (description, ad_id))
+    db.commit()
+    db.close()
+
+
+def ad_off(ad_id):
+    db = sqlite3.connect('database/adsdb.db')
+    sql = db.cursor()
+    sql.execute("UPDATE ads SET active = (?) WHERE ad_id = (?)", (0, ad_id))
+    db.commit()
+    db.close()
+
+
+def ad_on(ad_id):
+    db = sqlite3.connect('database/adsdb.db')
+    sql = db.cursor()
+    sql.execute("UPDATE ads SET active = (?) WHERE ad_id = (?)", (1, ad_id))
+    db.commit()
+    db.close()
+
+
+def delete_ad(ad_id):
+    db = sqlite3.connect('database/adsdb.db')
+    sql = db.cursor()
+    sql.execute("DELETE FROM ads WHERE ad_id = (?)", (ad_id,))
     db.commit()
     db.close()
 
@@ -243,8 +308,8 @@ def show_ads_to_order(fiat, crypto, pay_method, ad_type):
     db = sqlite3.connect('database/adsdb.db')
     sql = db.cursor()
     sql.execute(
-        "SELECT ad_id, price, pay_method, crypto, ad_type, limits FROM ads WHERE crypto = (?) AND fiat = (?) AND pay_method = (?) AND ad_type = (?)",
-        (crypto, fiat, pay_method, ad_type))
+        "SELECT ad_id, price, pay_method, crypto, ad_type, limits FROM ads WHERE crypto = (?) AND fiat = (?) AND pay_method = (?) AND ad_type = (?) AND active = (?)",
+        (crypto, fiat, pay_method, ad_type, 1))
     data = sql.fetchall()
     db.close()
     return data

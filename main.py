@@ -8,8 +8,6 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 
-from adminpanel.admins import admins
-
 from keyboards.mainboard import mainboard
 from keyboards.p2p_board import p2p_base_board
 from keyboards.balance_board import balance_base_board, take_off_crypto_board, take_on_crypro_board, board_success_btc, \
@@ -18,21 +16,24 @@ from keyboards.settings_board import settings_board
 from keyboards.fiat_board import fiat_board
 from keyboards.p2p_board import show_ads_board, buy_or_sell_board, choose_p2p_crypto_board, choose_p2p_paytype, \
     choose_p2p_paymethod, choose_order_paymethod
-from keyboards.pay_methods import check_all_data, check_all_data_order
+from keyboards.pay_methods import check_all_data, check_all_data_order, add_methods_to_json
 from keyboards.p2p_board import create_order_board, choose_p2p_paytype_order, show_ads_to_create_order_board
 from keyboards.p2p_board import start_exthenge, is_paid, confirm_paid_from_maker, confirm_requisites_buttons, \
     is_paid_maker, confirm_paid_from_taker, my_ad_settings
+from keyboards.admin_board import admin_board, cancel_board
 
 from database.balancedb import wallet, get_balance, add_btc, add_usdt, add_xmr
 from database.check_hash import checker_hash
 from database.settingsdb import settings_starts, change_fiat
 from database.addb import *
 from database.orders import *
+from database.admindb import *
 
 from states.hash_state import Check_hash_btc, Check_hash_usdt, Check_hash_xmr
 from states.output_crypto import output_btc, output_xmr, output_usdt
 from states.ad_state import get_ad_data, get_ad_data_repleace
 from states.order_state import Order
+from states.adminstate import new_admin, new_pay_mehod
 
 from utils.btcscan import btc_hash_scaner
 from utils.tronscan import tron_hash_scaner
@@ -49,11 +50,9 @@ dp = Dispatcher(bot, storage=storage)
 # Переход в админку
 @dp.message_handler(commands=['admin'])
 async def admin_panel(message: types.Message):
-    if message.from_user.id in admins:
+    if is_admin(message.from_user.id) == True:
         await bot.send_message(message.from_user.id,
-                               f"Администратор {message.from_user.id} Добро пожаловать в админ панель!")
-        hook = requests.post('http://127.0.0.1:5003/admin')
-        await bot.send_message(message.from_user.id, f"{hook.text}")
+                               f"Администратор {message.from_user.id} Добро пожаловать в админ панель!", reply_markup=admin_board)
 
 
 # Старт бота
@@ -412,10 +411,11 @@ async def set_p2p_paytype(callback: types.CallbackQuery):
                            reply_markup=choose_order_paymethod(check_fiat(callback.from_user.id)[0], callback.data))
 
 
-@dp.callback_query_handler(text=check_all_data_order())
+@dp.callback_query_handler(Text(startswith="pay_"))
 async def set_p2p_pay_method(callback: types.CallbackQuery):
     await callback.message.delete()
-    set_order_paymethod(callback.from_user.id, callback.data.split("_")[0])
+    data = callback.data.split("pay_")[1]
+    set_order_paymethod(callback.from_user.id, data.split("_")[0])
     await bot.send_message(callback.from_user.id, "Выберите объявление",
                            reply_markup=show_ads_to_create_order_board(callback.from_user.id))
 
@@ -573,14 +573,126 @@ async def withdraw_to_taker(callback: types.CallbackQuery):
 # Настройки объявления
 @dp.callback_query_handler(Text(startswith="new_limit_"), state=get_ad_data_repleace.get_ad_id)
 async def new_limit(callback: types.CallbackQuery, state: FSMContext):
+    await callback.message.delete()
     ad_id = callback.data.split("new_limit_")[1]
     await state.update_data(ad_id=ad_id)
-    await bot.send_message(callback.from_user.id, "Введите новые лимиты")
+    limits_now = check_limits_order(ad_id)
+    await bot.send_message(callback.from_user.id, f"Введите новые лимиты\n\nЛимиты установленные сейчас: {limits_now}")
     await get_ad_data_repleace.get_new_limits.set()
+
 
 @dp.message_handler(state=get_ad_data_repleace.get_new_limits)
 async def new_limits_ad(message: types.Message, state: FSMContext):
-    pass
+    await state.update_data(new_limit=message.text)
+    data = await state.get_data()
+    try:
+        limit2 = float(data["new_limit"].split("-")[1])
+        ad_id = data["ad_id"]
+        amount = check_amount_order(ad_id)
+        price = check_price_to_order(ad_id)
+        if float(amount) * float(price) < limit2 and check_ad_type_order(ad_id) == "SELL":
+            await bot.send_message(message.from_user.id, "Введены неккоректные данные\n\nПовторите попытку")
+        else:
+            update_limits_new(ad_id, data["new_limit"])
+            await bot.send_message(message.from_user.id, "Установлены новые лимиты", reply_markup=mainboard)
+            await state.finish()
+    except Exception as e:
+        await bot.send_message(message.from_user.id, "Введены неккоректные лимиты\n\nПовторите попытку")
+
+
+@dp.callback_query_handler(Text(startswith="new_price_"), state=get_ad_data_repleace.get_ad_id)
+async def new_price(callback: types.CallbackQuery, state: FSMContext):
+    await callback.message.delete()
+    ad_id = callback.data.split("new_price_")[1]
+    await state.update_data(ad_id=ad_id)
+    price = check_price_to_order(ad_id)
+    await bot.send_message(callback.from_user.id, f"Текущая цена {price}\n\nВведите новую цену")
+    await get_ad_data_repleace.get_new_price.set()
+
+
+@dp.message_handler(state=get_ad_data_repleace.get_new_price)
+async def new_price_ad(message: types.Message, state: FSMContext):
+    try:
+        float(message.text)
+        await state.update_data(new_price=message.text)
+        data = await state.get_data()
+        update_price_new(data["ad_id"], data["new_price"])
+        await state.finish()
+        await bot.send_message(message.from_user.id, "Цена изменена", reply_markup=mainboard)
+    except:
+        await state.finish()
+        await bot.send_message(message.from_user.id, "Введены неккоректные данные", reply_markup=mainboard)
+
+
+@dp.callback_query_handler(Text(startswith="new_description_"), state=get_ad_data_repleace.get_ad_id)
+async def new_description(callback: types.CallbackQuery, state: FSMContext):
+    await callback.message.delete()
+    ad_id = callback.data.split("new_description_")[1]
+    await state.update_data(ad_id=ad_id)
+    await bot.send_message(callback.from_user.id, f"Добавьте условия работы с вами")
+    await get_ad_data_repleace.get_new_description.set()
+
+
+@dp.message_handler(state=get_ad_data_repleace.get_new_description)
+async def new_description_ad(message: types.Message, state: FSMContext):
+    await state.update_data(new_description=message.text)
+    data = await state.get_data()
+    update_description_new(data['ad_id'], data['new_description'])
+    await bot.send_message(message.from_user.id, "Текст изменен", reply_markup=mainboard)
+    await state.finish()
+
+
+@dp.callback_query_handler(Text(startswith="new_requisites_"), state=get_ad_data_repleace.get_ad_id)
+async def new_requisites(callback: types.CallbackQuery, state: FSMContext):
+    await callback.message.delete()
+    ad_id = callback.data.split("new_requisites_")[1]
+    await state.update_data(ad_id=ad_id)
+    await bot.send_message(callback.from_user.id, f"Добавьте новые реквизиты")
+    await get_ad_data_repleace.get_new_requisites.set()
+
+
+@dp.message_handler(state=get_ad_data_repleace.get_new_requisites)
+async def new_requisites_ad(message: types.Message, state: FSMContext):
+    await state.update_data(new_requisites=message.text)
+    data = await state.get_data()
+    update_requisites_new(data['ad_id'], data['new_requisites'])
+    await bot.send_message(message.from_user.id, "Реквизиты изменены", reply_markup=mainboard)
+    await state.finish()
+
+
+@dp.callback_query_handler(Text(startswith="off_"), state=get_ad_data_repleace.get_ad_id)
+async def off_ad(callback: types.CallbackQuery, state: FSMContext):
+    await callback.message.delete()
+    await state.finish()
+    ad_id = callback.data.split("off_")[1]
+    ad_off(ad_id)
+    await bot.send_message(callback.from_user.id, "Объявление отключено", reply_markup=mainboard)
+
+
+@dp.callback_query_handler(Text(startswith="on_"), state=get_ad_data_repleace.get_ad_id)
+async def on_ad(callback: types.CallbackQuery, state: FSMContext):
+    await callback.message.delete()
+    await state.finish()
+    ad_id = callback.data.split("on_")[1]
+    ad_on(ad_id)
+    await bot.send_message(callback.from_user.id, "Объявление включено", reply_markup=mainboard)
+
+
+@dp.callback_query_handler(Text(startswith="delete_"), state=get_ad_data_repleace.get_ad_id)
+async def ad_delete(callback: types.CallbackQuery, state: FSMContext):
+    await callback.message.delete()
+    await state.finish()
+    ad_id = callback.data.split("delete_")[1]
+    delete_ad(ad_id)
+    await bot.send_message(callback.from_user.id, "Объявление удалено")
+
+
+@dp.callback_query_handler(text=['exit'], state=get_ad_data_repleace.get_ad_id)
+async def exit_from_redactor(callback: types.CallbackQuery, state: FSMContext):
+    await callback.message.delete()
+    await bot.send_message(callback.from_user.id, "Редактирование окончено")
+    await state.finish()
+
 
 # Настройки
 @dp.callback_query_handler(text=['lang', 'fiat'])
@@ -623,14 +735,75 @@ async def speak(msg: types.Message):
                                reply_markup=balance_base_board)
     elif msg.text == '⚙ Настройки':
         user = msg.from_user.id
-        await bot.send_message(msg.from_user.id, f"Настройки пользователя /{user}", reply_markup=settings_board)
+        await bot.send_message(msg.from_user.id, f"Настройки пользователя /user{user}", reply_markup=settings_board)
     elif msg.text == '🚨 Поддержка':
         await bot.send_message(msg.from_user.id,
                                f"Если у вас возникли проблемы или вопросы вы можете связаться с поддержкой\n\n Аккаунт поддрежки: {support_acount}")
     elif msg.text == '📌 FAQ':
         await bot.send_message(msg.from_user.id, "FAQ: Полное и подробное руководство по работе с системой.")
+    elif msg.text == "➕ Добавить нового администратора":
+        if is_admin(msg.from_user.id):
+            await bot.send_message(msg.from_user.id, "Напишите user ID нового админа", reply_markup=cancel_board)
+            await new_admin.get_id.set()
+        else:
+            await bot.send_message(msg.from_user.id, "Access is denied")
+    elif msg.text == "➕ Добавить платежку":
+        if is_admin(msg.from_user.id):
+            await bot.send_message(msg.from_user.id, "Введите валюту", reply_markup=cancel_board)
+            await new_pay_mehod.get_admin_fiat.set()
+        else:
+            await bot.send_message(msg.from_user.id, "Access is denied")
+    elif msg.text == "❌ Отменить":
+        await bot.send_message(msg.from_user.id, "Отменено", reply_markup=mainboard)
     else:
         await bot.send_message(msg.from_user.id, "Извините, но я вас не понимаю")
+
+
+
+@dp.message_handler(state=new_admin.get_id)
+async def create_new_admin(message: types.Message, state: FSMContext):
+    if message.text == "❌ Отменить":
+        await bot.send_message(message.from_user.id, "Отменено", reply_markup=admin_board)
+        await state.finish()
+    else:
+        await state.update_data(admin_id=message.text)
+        data = await state.get_data()
+        new_admin_create(data["admin_id"])
+        await bot.send_message(message.from_user.id, "Админ добавлен", reply_markup=admin_board)
+        await state.finish()
+
+
+@dp.message_handler(state=new_pay_mehod.get_admin_fiat)
+async def get_admin_fiat_(message: types.Message, state: FSMContext):
+    if message.text == "❌ Отменить":
+        await bot.send_message(message.from_user.id, "Отменено", reply_markup=admin_board)
+        await state.finish()
+    else:
+        await state.update_data(fiat=message.text)
+        await bot.send_message(message.from_user.id, "Введите тип платежки (bank, online_wallet, world, crypto)")
+        await new_pay_mehod.next()
+
+@dp.message_handler(state=new_pay_mehod.get_admin_methods)
+async def get_admin_methods_(message: types.Message, state: FSMContext):
+    if message.text == "❌ Отменить":
+        await bot.send_message(message.from_user.id, "Отменено", reply_markup=admin_board)
+        await state.finish()
+    else:
+        await state.update_data(methods=message.text)
+        await bot.send_message(message.from_user.id, "Введите название платежки")
+        await new_pay_mehod.next()
+
+@dp.message_handler(state=new_pay_mehod.get_admin_method)
+async def get_admin_method_(message: types.Message, state: FSMContext):
+    if message.text == "❌ Отменить":
+        await bot.send_message(message.from_user.id, "Отменено", reply_markup=admin_board)
+        await state.finish()
+    else:
+        await state.update_data(method=message.text)
+        data = await state.get_data()
+        add_methods_to_json(data["fiat"], data["methods"], data["method"])
+        await bot.send_message(message.from_user.id, "Платежка добавлена")
+        await state.finish()
 
 
 if __name__ == '__main__':

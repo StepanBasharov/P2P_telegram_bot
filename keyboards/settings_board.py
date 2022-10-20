@@ -1,6 +1,4 @@
-from aiogram.types import ReplyKeyboardRemove, \
-    ReplyKeyboardMarkup, KeyboardButton, \
-    InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 lang = InlineKeyboardButton("Language", callback_data='lang')
 fiat = InlineKeyboardButton("Fiat", callback_data='fiat')

@@ -75,7 +75,7 @@ def choose_order_paymethod(fiat, method):
         method = method.split("_")[0]
     data = choose_pay_method_from_json(fiat, method)
     for i in data:
-        pay_methods_board.row(InlineKeyboardButton(i, callback_data=f"{i}_order"))
+        pay_methods_board.row(InlineKeyboardButton(i, callback_data=f"pay_{i}_order"))
     return pay_methods_board
 
 
@@ -149,5 +149,6 @@ def my_ad_settings(ad_id):
     else:
         status_button = InlineKeyboardButton("🟥 Включить", callback_data=f"on_{ad_id}")
     delete_ad = InlineKeyboardButton("🗑 Удалить", callback_data=f"delete_{ad_id}")
-    settings_ad_board.row(new_limit, new_price).row(new_description, new_requisites).row(status_button, delete_ad)
+    exit_button = InlineKeyboardButton("❌ Выход из редактирования", callback_data="exit")
+    settings_ad_board.row(new_limit, new_price).row(new_description, new_requisites).row(status_button, delete_ad).row(exit_button)
     return settings_ad_board
