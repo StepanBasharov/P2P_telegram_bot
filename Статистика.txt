@@ -1,0 +1,3 @@
+Taker : 34131, Maker: 341234, Amount : 5, Crypto : BTC
+
+Taker : 5125059839, Maker: 596651102, Amount : 3.896103896103896, Crypto : USDT

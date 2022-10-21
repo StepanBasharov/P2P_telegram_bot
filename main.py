@@ -52,7 +52,8 @@ dp = Dispatcher(bot, storage=storage)
 async def admin_panel(message: types.Message):
     if is_admin(message.from_user.id) == True:
         await bot.send_message(message.from_user.id,
-                               f"Администратор {message.from_user.id} Добро пожаловать в админ панель!", reply_markup=admin_board)
+                               f"Администратор {message.from_user.id} Добро пожаловать в админ панель!",
+                               reply_markup=admin_board)
 
 
 # Старт бота
@@ -531,6 +532,7 @@ async def withdraw_to_taker(callback: types.CallbackQuery):
     elif crypto == "XMR":
         add_xmr(maker, to_withdraw)
         add_xmr(taker, -to_withdraw)
+    write_to_history(taker, maker, to_withdraw, crypto)
     await bot.send_message(taker, f"С вашего {crypto} кошелька выведено {to_withdraw} {crypto}")
     await bot.send_message(maker, f"На ваш {crypto} кошелек поступило {to_withdraw} {crypto}")
 
@@ -566,6 +568,7 @@ async def withdraw_to_taker(callback: types.CallbackQuery):
     elif crypto == "XMR":
         add_xmr(maker, -to_withdraw)
         add_xmr(taker, to_withdraw)
+    write_to_history(taker, maker, to_withdraw, crypto)
     await bot.send_message(maker, f"С вашего {crypto} кошелька выведено {to_withdraw} {crypto}")
     await bot.send_message(taker, f"На ваш {crypto} кошелек поступило {to_withdraw} {crypto}")
 
@@ -755,9 +758,25 @@ async def speak(msg: types.Message):
             await bot.send_message(msg.from_user.id, "Access is denied")
     elif msg.text == "❌ Отменить":
         await bot.send_message(msg.from_user.id, "Отменено", reply_markup=mainboard)
+    elif msg.text.startswith("/user"):
+        user_id = msg.text.split("/user")[1]
+        data = show_history(user_id)
+        text = []
+        for i in data:
+            text.append(f"Taker : {i[0]}, Maker: {i[1]}, Amount : {i[2]}, Crypto : {i[3]}")
+        text = "\n\n".join(text)
+        await bot.send_message(msg.from_user.id, text)
+    elif msg.text == "📈 Статистика":
+        data = show_all_history()
+        text = []
+        for i in data:
+            text.append(f"Taker : {i[0]}, Maker: {i[1]}, Amount : {i[2]}, Crypto : {i[3]}")
+        text = "\n\n".join(text)
+        with open("Статистика.txt", "w") as f:
+            f.write(text)
+        await bot.send_document(msg.from_user.id, open("Статистика.txt", 'rb'))
     else:
         await bot.send_message(msg.from_user.id, "Извините, но я вас не понимаю")
-
 
 
 @dp.message_handler(state=new_admin.get_id)
@@ -783,6 +802,7 @@ async def get_admin_fiat_(message: types.Message, state: FSMContext):
         await bot.send_message(message.from_user.id, "Введите тип платежки (bank, online_wallet, world, crypto)")
         await new_pay_mehod.next()
 
+
 @dp.message_handler(state=new_pay_mehod.get_admin_methods)
 async def get_admin_methods_(message: types.Message, state: FSMContext):
     if message.text == "❌ Отменить":
@@ -792,6 +812,7 @@ async def get_admin_methods_(message: types.Message, state: FSMContext):
         await state.update_data(methods=message.text)
         await bot.send_message(message.from_user.id, "Введите название платежки")
         await new_pay_mehod.next()
+
 
 @dp.message_handler(state=new_pay_mehod.get_admin_method)
 async def get_admin_method_(message: types.Message, state: FSMContext):

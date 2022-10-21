@@ -23,7 +23,8 @@ def start_order(taker, maker, ad_id):
     generate_id = f"order_{str(randint(1, 999999999999))}"
     sql.execute(f"SELECT order_id FROM orders_now WHERE order_id = (?)", (generate_id,))
     if sql.fetchone() is None:
-        sql.execute("INSERT INTO orders_now VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (taker, maker, ad_id, 0, 0, 0, generate_id, "0"))
+        sql.execute("INSERT INTO orders_now VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    (taker, maker, ad_id, 0, 0, 0, generate_id, "0"))
         db.commit()
         db.close()
         return generate_id
@@ -39,6 +40,7 @@ def get_order_id(taker):
     data = sql.fetchone()[0]
     db.close()
     return data
+
 
 def get_order_amount(order_id):
     db = sqlite3.connect('database/order_search.db')
@@ -123,5 +125,31 @@ def get_ad_id(order_id):
     sql = db.cursor()
     sql.execute("SELECT ad_id FROM orders_now WHERE order_id = (?)", (order_id,))
     data = sql.fetchone()[0]
+    db.close()
+    return data
+
+
+def write_to_history(taker, maker, amount, crypto):
+    db = sqlite3.connect('database/order_search.db')
+    sql = db.cursor()
+    sql.execute("INSERT INTO history VALUES (?, ?, ?, ?)", (taker, maker, amount, crypto))
+    db.commit()
+    db.close()
+
+
+def show_history(user_id):
+    db = sqlite3.connect('database/order_search.db')
+    sql = db.cursor()
+    sql.execute("SELECT taker, maker, amount, crypto FROM history WHERE taker = (?) OR maker = (?)", (user_id, user_id))
+    data = sql.fetchall()
+    db.close()
+    return data
+
+
+def show_all_history():
+    db = sqlite3.connect('database/order_search.db')
+    sql = db.cursor()
+    sql.execute("SELECT taker, maker, amount, crypto FROM history")
+    data = sql.fetchall()
     db.close()
     return data
