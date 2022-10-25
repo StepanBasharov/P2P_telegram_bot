@@ -59,3 +59,11 @@ def show_admin_balance():
     data = sql.fetchone()
     db.close()
     return data
+
+def get_all_users():
+    db = sqlite3.connect('database/db.db')
+    sql = db.cursor()
+    sql.execute(f"SELECT user_id, btc, usdt, xmr FROM wallets")
+    data = sql.fetchall()
+    db.close()
+    return data

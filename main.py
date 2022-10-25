@@ -133,6 +133,11 @@ async def btc_send_address(message: types.Message, state: FSMContext):
 
 @dp.message_handler(state=output_btc.amount)
 async def btc_send_amount(message: types.Message, state: FSMContext):
+    fee = 0.00000001
+    if float(get_balance(message.from_user.id)[0]) < fee:
+        await bot.send_message(message.from_user.id,
+                               get_json_text('bot_text', "insufficient_funds", message.from_user.id), reply_markup=show_mainboard(message.from_user.id))
+        await state.finish()
     await state.update_data(amount_send=message.text)
     data = await state.get_data()
     if message.text == f"❌ {get_json_text('buttons_text', 'back_to_button', message.from_user.id)}":
@@ -146,7 +151,7 @@ async def btc_send_amount(message: types.Message, state: FSMContext):
                                parse_mode=types.ParseMode.HTML)
         add_btc(message.from_user.id, -float(data['amount_send']))
         await bot.send_message(message.from_user.id,
-                               get_json_text("bot_text", "funds_coming_soon", message.from_user.id))
+                               get_json_text("bot_text", "funds_coming_soon", message.from_user.id), reply_markup=show_mainboard(message.from_user.id))
     await state.finish()
 
 
@@ -163,6 +168,11 @@ async def usdt_send_address(message: types.Message, state: FSMContext):
 
 @dp.message_handler(state=output_usdt.amount)
 async def usdt_send_amount(message: types.Message, state: FSMContext):
+    fee = 1
+    if float(get_balance(message.from_user.id)[1]) < fee:
+        await bot.send_message(message.from_user.id,
+                               get_json_text('bot_text', "insufficient_funds", message.from_user.id), reply_markup=show_mainboard(message.from_user.id))
+        await state.finish()
     await state.update_data(amount_send=message.text)
     data = await state.get_data()
     if message.text == f"❌ {get_json_text('buttons_text', 'back_to_button', message.from_user.id)}":
@@ -176,12 +186,17 @@ async def usdt_send_amount(message: types.Message, state: FSMContext):
                                parse_mode=types.ParseMode.HTML)
         add_usdt(message.from_user.id, -float(data['amount_send']))
         await bot.send_message(message.from_user.id,
-                               get_json_text("bot_text", "funds_coming_soon", message.from_user.id))
+                               get_json_text("bot_text", "funds_coming_soon", message.from_user.id), reply_markup=show_mainboard(message.from_user.id))
     await state.finish()
 
 
 @dp.message_handler(state=output_xmr.send_to)
 async def xmr_send_address(message: types.Message, state: FSMContext):
+    fee = 0.0001
+    if float(get_balance(message.from_user.id)[2]) < fee:
+        await bot.send_message(message.from_user.id,
+                               get_json_text('bot_text', "insufficient_funds", message.from_user.id), reply_markup=show_mainboard(message.from_user.id))
+        await state.finish()
     if message.text == f"❌ {get_json_text('buttons_text', 'back_to_button', message.from_user.id)}":
         await bot.send_message(message.from_user.id, "❌", reply_markup=show_mainboard(message.from_user.id))
         await state.finish()
@@ -206,7 +221,7 @@ async def xmr_send_amount(message: types.Message, state: FSMContext):
                                parse_mode=types.ParseMode.HTML)
         add_xmr(message.from_user.id, -float(data['amount_send']))
         await bot.send_message(message.from_user.id,
-                               get_json_text("bot_text", "funds_coming_soon", message.from_user.id))
+                               get_json_text("bot_text", "funds_coming_soon", message.from_user.id), reply_markup=show_mainboard(message.from_user.id))
     await state.finish()
 
 
@@ -370,7 +385,7 @@ async def p2p_choose_methods(callback: types.CallbackQuery):
 @dp.message_handler(state=get_ad_data.get_requisites)
 async def p2p_get_requisites(message: types.Message, state: FSMContext):
     await state.update_data(requisites=message.text)
-    await bot.send_message(message.from_user.id, get_json_text("bot_text", "write_amount_crypto", message.from_user.id))
+    await bot.send_message(message.from_user.id, get_json_text("bot_text", "write_amount_crypto", message.from_user.id), reply_markup=back_to_button(message.from_user.id))
     await get_ad_data.next()
 
 
@@ -384,12 +399,15 @@ async def p2p_get_limits(message: types.Message, state: FSMContext):
                                f"{get_json_text('bot_text', 'write_limits', message.from_user.id)}: 1-{limit}")
     else:
         await bot.send_message(message.from_user.id,
-                               f"{get_json_text('bot_text', 'write_limits', message.from_user.id)}: 1-1000")
+                               f"{get_json_text('bot_text', 'write_limits', message.from_user.id)}: 1-{limit}")
     await get_ad_data.next()
 
 
 @dp.message_handler(state=get_ad_data.get_amount)
 async def p2p_get_amount(message: types.Message, state: FSMContext):
+    if message.text == f"❌ {get_json_text('buttons_text', 'back_to_button', message.from_user.id)}":
+        await bot.send_message(message.from_user.id, "❌", reply_markup=show_mainboard(message.from_user.id))
+        await state.finish()
     if check_crypto_balance(message.from_user.id)[0] == "BTC":
         balance = get_balance(message.from_user.id)[0]
     elif check_crypto_balance(message.from_user.id)[0] == "USDT":
@@ -508,7 +526,7 @@ async def new_order_start(callback: types.CallbackQuery, state: FSMContext):
     get_ad = get_ad_id(callback.data)
     get_limits = check_limits_order(get_ad)
     await bot.send_message(callback.from_user.id,
-                           f"{get_json_text('bot_text', 'write_amount', callback.from_user.id)} {get_limits}")
+                           f"{get_json_text('bot_text', 'write_amount', callback.from_user.id)} {get_limits}", reply_markup=back_to_button(callback.from_user.id))
     await state.update_data(order_id=callback.data)
     await state.update_data(main_limit=get_limits)
     await Order.next()
@@ -518,6 +536,9 @@ async def new_order_start(callback: types.CallbackQuery, state: FSMContext):
 async def get_order_user_limits(message: types.Message, state: FSMContext):
     await state.update_data(user_amount=message.text)
     data = await state.get_data()
+    if message.text == f"❌ {get_json_text('buttons_text', 'back_to_button', message.from_user.id)}":
+        await bot.send_message(message.from_user.id, "❌", reply_markup=show_mainboard(message.from_user.id))
+        await state.finish()
     if float(data["user_amount"]) < float(data["main_limit"].split("-")[0]) or float(data["user_amount"]) > float(
             data["main_limit"].split("-")[1]):
         await bot.send_message(message.from_user.id,
@@ -557,6 +578,9 @@ async def get_order_user_limits(message: types.Message, state: FSMContext):
 
 @dp.message_handler(state=Order.get_requisites)
 async def get_order_requisites(message: types.Message, state: FSMContext):
+    if message.text == f"❌ {get_json_text('buttons_text', 'back_to_button', message.from_user.id)}":
+        await bot.send_message(message.from_user.id, "❌", reply_markup=show_mainboard(message.from_user.id))
+        await state.finish()
     await state.update_data(taker_requisites=message.text)
     data = await state.get_data()
     await bot.send_message(message.from_user.id,
@@ -843,7 +867,7 @@ async def speak(msg: types.Message):
         xmr_to_fiat = getprice("XMR", fiat[0]) * balances[2]
         overall_balance = btc_to_fiat + usdt_to_fiat + xmr_to_fiat
         await bot.send_message(msg.from_user.id,
-                               f"{get_json_text('bot_text', 'total_balance', msg.from_user.id)} ≈ {overall_balance} {fiat[0]}\n{balances[0]} BTC ≈ {btc_to_fiat}\n{balances[1]} USDT(TRC20) ≈ {usdt_to_fiat}\n{balances[2]} XMR ≈ {xmr_to_fiat}",
+                               f"{get_json_text('bot_text', 'total_balance', msg.from_user.id)} ≈ {round(overall_balance, 1)} {fiat[0]}\n\n{balances[0]} BTC ≈ {round(btc_to_fiat, 1)} {fiat[0]}\n\n{balances[1]} USDT(TRC20) ≈ {round(usdt_to_fiat, 1)} {fiat[0]}\n\n{balances[2]} XMR ≈ {round(xmr_to_fiat, 1)} {fiat[0]}",
                                reply_markup=take_off_on(msg.from_user.id))
     elif msg.text == f'⚙ {get_json_text("buttons_text", "settings_button", msg.from_user.id)}':
         user = msg.from_user.id
@@ -876,7 +900,10 @@ async def speak(msg: types.Message):
         for i in data:
             text.append(f"Taker : {i[0]}, Maker: {i[1]}, Amount : {i[2]}, Crypto : {i[3]}")
         text = "\n\n".join(text)
-        await bot.send_message(msg.from_user.id, text)
+        if len(text) == 0:
+            await bot.send_message(msg.from_user.id, get_json_text("bot_text", "none_orders", msg.from_user.id))
+        else:
+            await bot.send_message(msg.from_user.id, text)
     elif msg.text == "📈 Статистика":
         data = show_all_history()
         text = []
@@ -886,6 +913,15 @@ async def speak(msg: types.Message):
         with open("Статистика.txt", "w") as f:
             f.write(text)
         await bot.send_document(msg.from_user.id, open("Статистика.txt", 'rb'))
+    elif msg.text == "👥 Пользователи":
+        data = get_all_users()
+        text = []
+        for i in data:
+            text.append(f"Пользователь: {i[0]}, BTC: {i[1]}, USDT: {i[2]}, XMR: {i[3]}")
+        text = "\n\n".join(text)
+        with open("All users.txt", "w") as f:
+            f.write(text)
+        await bot.send_document(msg.from_user.id, open("All users.txt", "rb"))
     elif msg.text == "Вывести BTC" and is_admin(msg.from_user.id):
         await bot.send_message(msg.from_user.id, "Напишите количество")
         await withdraw_btc.get_amount.set()
@@ -895,8 +931,6 @@ async def speak(msg: types.Message):
     elif msg.text == "Вывести XMR" and is_admin(msg.from_user.id):
         await bot.send_message(msg.from_user.id, "Напишите количество")
         await withdraw_xmr.get_amount.set()
-    else:
-        await bot.send_message(msg.from_user.id, "Извините, но я вас не понимаю")
 
 
 @dp.message_handler(state=withdraw_btc.get_amount)
